@@ -2,9 +2,14 @@
 name = "adxl345_driver"
 version = "0.0.1"
 authors = ["Michael Cummings <dragonrun1@gmail.com>"]
+description = "Driver for Analog Device ADXL345 3-Axis Digital Accelerometer"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+keywords = ["adxl345", "embedded", "pi", "raspberry", "driver"]
+categories = ["embedded", "hardware-support", "os"]
+license = "MIT"
+homepage = "https://github.com/Dragonrun1/adxl345_driver"
+readme = "README.md"
+repository = "https://github.com/Dragonrun1/adxl345_driver"
 
 [dependencies]
 bitflags = "1.2.1"
