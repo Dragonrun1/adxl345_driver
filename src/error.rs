@@ -39,8 +39,8 @@ impl From<AdxlError> for std::io::Error {
     }
 }
 
-/// Result type used when return value is needed from functions in library.
+/// Result type used when return value is needed from methods in library.
 pub type AdxlResult<T> = std::result::Result<T, AdxlError>;
 
-/// Result type used when return value is _not_ needed from functions in library.
+/// Result type used when return value is _NOT_ needed from methods in library.
 pub type Result = std::result::Result<(), AdxlError>;
