@@ -20,7 +20,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-}
+#[macro_use]
+extern crate bitflags;
+
+mod cmd;
+mod error;
+
+pub use crate::{
+    cmd::{ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, TapMode},
+    error::{AdxlError, AdxlResult, Result},
+};
