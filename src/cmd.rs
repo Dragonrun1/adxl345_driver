@@ -29,7 +29,11 @@ pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
 pub trait Adxl345Reader {
     /// Access the device ID.
     fn device_id(&self) -> AdxlResult<u8>;
-    fn tab_threshold(&self) -> AdxlResult<u8>;
+    fn tap_threshold(&self) -> AdxlResult<u8>;
+    /// Access the current tap control mode.
+    fn tap_control(&self) -> AdxlResult<TapMode>;
+    /// Access the current activity control mode.
+    fn activity_control(&self) -> AdxlResult<ActivityMode>;
 }
 
 /// Write command set for accelerometer.
@@ -61,8 +65,8 @@ pub trait Adxl345Writer {
     /// ## Arguments
     /// * `thresh` - Threshold value for tap interrupts.
     /// The scale factor is 62.5 mg/LSB.
-    /// A value of 0 may result in undesirable behavior if single tap/double tap
-    /// interrupts are enabled.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the single tap/double tap interrupt(s) are enabled._
     /// * `duration` - Time value representing the maximum time that an event
     /// must be above the threshold to qualify as a tap event.
     /// The scale factor is 625 μs/LSB.
@@ -84,7 +88,7 @@ pub trait Adxl345Writer {
     /// See [TapMode] bit flags for more info.
     ///
     /// [TapMode]: struct.TapMode.html
-    fn tap_control<TM>(&mut self, mode: TM) -> Result
+    fn set_tap_control<TM>(&mut self, mode: TM) -> Result
     where
         TM: Into<TapMode>;
     /// Use to set one or more axis offset adjustments.
@@ -136,7 +140,7 @@ pub trait Adxl345Writer {
     /// See [ActivityMode] bit flags for more info.
     ///
     /// [ActivityMode]: struct.ActivityMode.html
-    fn activity_control<AM>(&mut self, mode: AM) -> Result
+    fn set_activity_control<AM>(&mut self, mode: AM) -> Result
     where
         AM: Into<ActivityMode>;
     /// Used to set threshold and time values for free-fall detection.
@@ -158,9 +162,11 @@ pub trait Adxl345Writer {
 
 // Activity/Inactivity control mode.
 bitflags! {
-    /// Activity mode bit flags used in [activity_control()] command.
+    /// Activity mode bit flags used in [activity_control()] and
+    /// [set_activity_control()] methods.
     ///
-    /// [activity_control()]: trait.ADXL345Writer.html#method.activity_control
+    /// [activity_control()]: trait.Adxl345Reader.html#method.activity_control
+    /// [set_activity_control()]: trait.Adxl345Writer.html#method.set_activity_control
     #[derive(Default)]
     pub struct ActivityMode: u8 {
         /// Select activity AC-coupled operation.
@@ -199,6 +205,11 @@ bitflags! {
 }
 // Tap Axis control mode.
 bitflags! {
+    /// Tap axis mode bit flags used in [tap_control()] and [set_tap_control()]
+    /// methods.
+    ///
+    /// [tap_control()]: trait.Adxl345Reader.html#method.tap_control
+    /// [set_tap_control()]: trait.Adxl345Writer.html#method.set_tap_control
     #[derive(Default)]
     pub struct TapMode: u8 {
         /// Disable (suppress) double tap detection if acceleration is greater
