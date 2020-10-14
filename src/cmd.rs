@@ -29,13 +29,39 @@ pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
 
 /// Read register command set for accelerometer.
 pub trait Adxl345Reader {
-    /// Access the device ID.
-    fn device_id(&self) -> AdxlResult<u8>;
-    fn tap_threshold(&self) -> AdxlResult<u8>;
-    /// Access the current tap control mode.
-    fn tap_control(&self) -> AdxlResult<TapMode>;
     /// Access the current activity control mode.
     fn activity_control(&self) -> AdxlResult<ActivityMode>;
+    /// Access the cause of tap or activity event (interrupt).
+    ///
+    /// ___Note:___ _The register value should be read before clearing the
+    /// interrupt._
+    ///
+    /// Disabling an axis from participation clears the corresponding source bit
+    /// when the next activity or single tap/double tap event occurs.
+    fn activity_tap_status(&self) -> AdxlResult<ATStatus>;
+    /// Access the current data rate and power mode control mode.
+    fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl>;
+    /// Access the device ID.
+    fn device_id(&self) -> AdxlResult<u8>;
+    /// Access the current power-saving features control mode.
+    fn power_control(&self) -> AdxlResult<PowerControl>;
+    /// Access to all non-control tap current values.
+    ///
+    /// Returns the same values, in the same order, as used for parameters to
+    /// [set_tap()] method.
+    ///
+    /// [set_tap()]: trait.Adxl345Writer.html#method.set_tap
+    fn tap(&self) -> AdxlResult<(u8, u8, u8, u8)>;
+    /// Access the current tap control mode.
+    fn tap_control(&self) -> AdxlResult<TapMode>;
+    /// Access the current duration value for tap interrupts.
+    fn tap_duration(&self) -> AdxlResult<u8>;
+    /// Access the current latency value for tap interrupts.
+    fn tap_latency(&self) -> AdxlResult<u8>;
+    /// Access the current threshold value for tap interrupts.
+    fn tap_threshold(&self) -> AdxlResult<u8>;
+    /// Access the current window value for tap interrupts.
+    fn tap_window(&self) -> AdxlResult<u8>;
 }
 
 /// Write register command set for accelerometer.
@@ -62,37 +88,60 @@ pub trait Adxl345Writer {
     //
     // ## Shouldn't be a need to change these in driver implementations. ##
     //
-    /// Tap related settings
+    /// Set the activity threshold.
     ///
     /// ## Arguments
-    /// * `thresh` - Threshold value for tap interrupts.
+    /// * `thresh` - Threshold value for detecting activity.
     /// The scale factor is 62.5 mg/LSB.
     /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the single tap/double tap interrupt(s) are enabled._
-    /// * `duration` - Time value representing the maximum time that an event
-    /// must be above the threshold to qualify as a tap event.
-    /// The scale factor is 625 μs/LSB.
-    /// A value of 0 disables the single tap/ double tap functions.
-    /// * `latency` - Time value representing the wait time from the detection
-    /// of a tap event to the start of the time window during which a possible
-    /// second tap event can be detected.
-    /// The scale factor is 1.25 ms/LSB.
-    /// A value of 0 disables the double tap function.
-    /// * `window` - Time value representing the amount of time after the
-    /// expiration of the latency time during which a second valid tap can begin.
-    /// The scale factor is 1.25 ms/LSB.
-    /// A value of 0 disables the double tap function.
-    fn set_tap(&mut self, thresh: u8, duration: u8, latency: u8, window: u8) -> Result;
-    /// Set tap control mode options.
+    /// the activity interrupt is enabled._
+    fn set_activity(&mut self, thresh: u8) -> Result;
+    /// Set activity/inactivity control mode options.
     ///
     /// ## Arguments
-    /// * `mode` - Tab mode bit flags.
-    /// See [TapMode] bit flags for more info.
+    /// * `mode` - Activity mode bit flags.
+    /// See [ActivityMode] bit flags for more info.
     ///
-    /// [TapMode]: struct.TapMode.html
-    fn set_tap_control<TM>(&mut self, mode: TM) -> Result
+    /// [ActivityMode]: struct.ActivityMode.html
+    fn set_activity_control<AM>(&mut self, mode: AM) -> Result
     where
-        TM: Into<TapMode>;
+        AM: Into<ActivityMode>;
+    /// Set data rate and power mode control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Data rate and power mode bit flags.
+    /// See [BandwidthRateControl] bit flags for more info.
+    ///
+    /// [BandwidthRateControl]: struct.BandwidthRateControl.html
+    fn set_bandwidth_rate<BRC>(&self, mode: BRC) -> Result
+    where
+        BRC: Into<BandwidthRateControl>;
+    /// Used to set threshold and time values for free-fall detection.
+    ///
+    /// ## Arguments
+    /// * `thresh` -  The threshold value for free-fall detection.
+    /// The scale factor is 62.5 mg/LSB.
+    /// Recommended values between 300mg and 600mg (0x14 - 0x46).
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the free-fall interrupt is enabled._
+    /// * `time` - Time value representing the minimum time that the value of
+    /// all axes must be less than `thresh` to generate a free-fall interrupt.
+    /// The scale factor is 5 ms/LSB.
+    /// Recommended values between 100ms and 350ms (0x14 - 0x46).
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the free-fall interrupt is enabled._
+    fn set_free_fall(&mut self, thresh: u8, time: u8) -> Result;
+    /// Used to set the threshold for detecting activity.
+    ///
+    /// ## Arguments
+    /// * `thresh` - Threshold value for detecting activity.
+    /// The scale factor is 62.5 mg/LSB.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the inactivity interrupt is enabled._
+    /// * `time` - Time value representing the amount of time that acceleration
+    /// must be less than the value in `thresh` for inactivity to be declared.
+    /// The scale factor is 1 sec/LSB.
+    fn set_inactivity(&mut self, thresh: u8, time: u8) -> Result;
     /// Use to set one or more axis offset adjustments.
     ///
     /// ## Arguments
@@ -116,50 +165,157 @@ pub trait Adxl345Writer {
         X: Into<Option<i8>>,
         Y: Into<Option<i8>>,
         Z: Into<Option<i8>>;
-    /// Used to set the threshold for detecting activity.
+    /// Set power-saving features control mode options.
     ///
     /// ## Arguments
-    /// * `thresh` - Threshold value for detecting activity.
-    /// The scale factor is 62.5 mg/LSB.
-    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the activity interrupt is enabled._
-    fn set_activity(&mut self, thresh: u8) -> Result;
-    /// Used to set the threshold for detecting activity.
+    /// * `mode` - Power-saving features bit flags.
+    /// See [PowerControl] bit flags for more info.
     ///
-    /// ## Arguments
-    /// * `thresh` - Threshold value for detecting activity.
-    /// The scale factor is 62.5 mg/LSB.
-    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the inactivity interrupt is enabled._
-    /// * `time` - Time value representing the amount of time that acceleration
-    /// must be less than the value in `thresh` for inactivity to be declared.
-    /// The scale factor is 1 sec/LSB.
-    fn set_inactivity(&mut self, thresh: u8, time: u8) -> Result;
-    /// Set activity/inactivity control mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Activity mode bit flags.
-    /// See [ActivityMode] bit flags for more info.
-    ///
-    /// [ActivityMode]: struct.ActivityMode.html
-    fn set_activity_control<AM>(&mut self, mode: AM) -> Result
+    /// [PowerControl]: struct.PowerControl.html
+    fn set_power_control<PC>(&self, mode: PC) -> Result
     where
-        AM: Into<ActivityMode>;
-    /// Used to set threshold and time values for free-fall detection.
+        PC: Into<PowerControl>;
+    /// Tap related settings
     ///
     /// ## Arguments
-    /// * `thresh` -  The threshold value for free-fall detection.
+    /// * `thresh` - Threshold value for tap interrupts.
     /// The scale factor is 62.5 mg/LSB.
-    /// Recommended values between 300mg and 600mg (0x14 - 0x46).
     /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the free-fall interrupt is enabled._
-    /// * `time` - Time value representing the minimum time that the value of
-    /// all axes must be less than `thresh` to generate a free-fall interrupt.
-    /// The scale factor is 5 ms/LSB.
-    /// Recommended values between 100ms and 350ms (0x14 - 0x46).
-    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the free-fall interrupt is enabled._
-    fn set_free_fall(&mut self, thresh: u8, time: u8) -> Result;
+    /// the single tap/double tap interrupt(s) are enabled._
+    /// * `duration` - Time value representing the maximum time that an event
+    /// must be above the threshold to qualify as a tap event.
+    /// The scale factor is 625 μs/LSB.
+    /// A value of 0 disables the single tap/double tap functions.
+    /// * `latency` - Time value representing the wait time from the detection
+    /// of a tap event to the start of the time window during which a possible
+    /// second tap event can be detected.
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    /// * `window` - Time value representing the amount of time after the
+    /// expiration of the latency time during which a second valid tap can begin.
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    fn set_tap(&mut self, thresh: u8, duration: u8, latency: u8, window: u8) -> Result;
+    /// Set tap control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Tab mode bit flags.
+    /// See [TapMode] bit flags for more info.
+    ///
+    /// [TapMode]: struct.TapMode.html
+    fn set_tap_control<TM>(&mut self, mode: TM) -> Result
+    where
+        TM: Into<TapMode>;
+}
+
+/// Bandwidth rate control bitfields used in [bandwidth_rate()] and
+/// [set_bandwidth_rate()] methods.
+///
+/// [bandwidth_rate()]: trait.Adxl345Reader.html#method.bandwidth_rate
+/// [set_bandwidth_rate()]: trait.Adxl345Writer.html#method.set_bandwidth_rate
+#[repr(C, align(1))]
+#[derive(BitfieldStruct, Clone, Copy)]
+pub struct BandwidthRateControl {
+    /// Bit fields:
+    /// * `low_power` - (Bit 4) Selects reduced power operation, which has
+    /// somewhat higher noise level.
+    /// * `rate` - (Bits 0-3) Select the device bandwidth and output data rate.
+    /// See the table below for more information.
+    ///
+    /// Power mode table:
+    ///
+    /// | Data  Rate (Hz) | Bandwidth (Hz) | Rate Code (bin) | Low Power? |
+    /// | --------------: | -------------: | --------------: | :--------: |
+    /// |         3200    |        1600    |            1111 | No         |
+    /// |         1600    |         800    |            1110 | No         |
+    /// |          800    |         400    |            1101 | No         |
+    /// |          400    |         200    |            1100 | __Yes__    |
+    /// |          200    |         100    |            1011 | __Yes__    |
+    /// |          100    |          50    |            1010 | __Yes__    |
+    /// |           50    |          25    |            1001 | __Yes__    |
+    /// |           25    |          12.5  |            1000 | __Yes__    |
+    /// |           12.5  |           6.25 |            0111 | __Yes__    |
+    /// |           6.25  |           3.13 |            0110 | No         |
+    /// |           3.13  |           1.56 |            0101 | No         |
+    /// |           1.56  |           0.78 |            0100 | No         |
+    /// |           0.78  |           0.39 |            0011 | No         |
+    /// |           0.39  |           0.20 |            0010 | No         |
+    /// |           0.20  |           0.10 |            0001 | No         |
+    /// |           0.10  |           0.05 |            0000 | No         |
+    ///
+    /// Data rates marked ___`Yes`___ for low power will show reduced power use
+    /// when the `low_power` bit is set. It has no effect on other data rates.
+    ///
+    #[bitfield(name = "low_power", ty = "bool", bits = "4..=4")]
+    #[bitfield(name = "rate", ty = "u8", bits = "0..=3")]
+    bandwidth_control: [u8; 1],
+}
+
+/// Power control bitfields used in [power_control()] and [set_power_control()]
+/// methods.
+///
+/// [power_control()]: trait.Adxl345Reader.html#method.power_control
+/// [set_power_control()]: trait.Adxl345Writer.html#method.set_power_control
+#[repr(C, align(1))]
+#[derive(BitfieldStruct, Clone, Copy)]
+pub struct PowerControl {
+    /// Bit fields:
+    /// * `link` - (Bit 5) This bit serially links the activity and inactivity
+    /// functions.
+    /// When the bit is 0 the inactivity and activity functions are concurrent.
+    /// * `auto_sleep` - (Bit 4) If the `link` bit is set, a setting of 1 in the
+    /// `auto_sleep` bit enables the auto-sleep functionality.
+    /// When bit is 0 then the activity/inactivity settings are ignored.
+    /// * `measure` - (Bit 3) Standby/measurement mode.
+    /// The ADXL345 is in standby mode at power up.
+    /// * `sleep` - (Bit 2) Puts part into sleep mode.
+    /// * `wakeup` - (Bits 0-1) Control the frequency of readings in sleep mode
+    /// as described in table.
+    ///
+    /// ___Note:___ _It is recommended that the `measure` bit be placed into
+    /// standby mode and then set back to measurement mode with a subsequent
+    /// write when changing any of the other power mode bit fields._
+    ///
+    /// Wakeup frequency table:
+    ///
+    /// | Frequency (Hz) | Wakeup (bin) |
+    /// | -------------: | -----------: |
+    /// |              8 |           00 |
+    /// |              4 |           01 |
+    /// |              2 |           10 |
+    /// |              1 |           11 |
+    ///
+    #[bitfield(name = "link", ty = "bool", bits = "5..=5")]
+    #[bitfield(name = "auto_sleep", ty = "bool", bits = "4..=4")]
+    #[bitfield(name = "measure", ty = "bool", bits = "3..=3")]
+    #[bitfield(name = "sleep", ty = "bool", bits = "2..=2")]
+    #[bitfield(name = "wakeup", ty = "u8", bits = "0..=1")]
+    power_control: [u8; 1],
+}
+
+// Activity/tap status.
+bitflags! {
+    /// Activity/Tap Status bit flags returned by [activity_tap_status()] method.
+    ///
+    /// The register should be read before clearing the interrupt.
+    ///
+    /// [activity_tap_status()]: trait.Adxl345Reader.html#method.activity_tap_status
+    pub struct ATStatus: u8 {
+        /// Indicate the X-axis is involved in the activity event.
+        const ACT_X = 0x40;
+        /// Indicate the Y-axis is involved in the activity event.
+        const ACT_Y = 0x20;
+        /// Indicate the Z-axis is involved in the activity event.
+        const ACT_Z = 0x10;
+        /// Indicates if the part is asleep or not.
+        const ASLEEP = 0x08;
+        /// Indicate the X-axis is involved in the tap event.
+        const TAP_X = 0x04;
+        /// Indicate the Y-axis is involved in the tap event.
+        const TAP_Y = 0x02;
+        /// Indicate the Z-axis is involved in the tap event.
+        const TAP_Z = 0x01;
+    }
 }
 
 // Activity/Inactivity control mode.
@@ -205,6 +361,7 @@ bitflags! {
         const INACT_Z_DISABLE = 0x00;
     }
 }
+
 // Tap Axis control mode.
 bitflags! {
     /// Tap axis mode bit flags used in [tap_control()] and [set_tap_control()]

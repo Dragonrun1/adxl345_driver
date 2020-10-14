@@ -25,11 +25,16 @@
 
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
+extern crate c2rust_bitfields;
+
+pub use crate::{
+    cmd::{
+        ATStatus, ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, BandwidthRateControl,
+        PowerControl, TapMode,
+    },
+    error::{AdxlError, AdxlResult, Result},
+};
 
 mod cmd;
 mod error;
-
-pub use crate::{
-    cmd::{ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, TapMode},
-    error::{AdxlError, AdxlResult, Result},
-};
