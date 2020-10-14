@@ -45,13 +45,12 @@ pub trait Adxl345Reader {
     fn device_id(&self) -> AdxlResult<u8>;
     /// Access the current power-saving features control mode.
     fn power_control(&self) -> AdxlResult<PowerControl>;
-    /// Access to all non-control tap current values.
+    /// Access to all non-control tap current values together as a structure.
     ///
-    /// Returns the same values, in the same order, as used for parameters to
-    /// [set_tap()] method.
+    /// See [Tap] for more information.
     ///
-    /// [set_tap()]: trait.Adxl345Writer.html#method.set_tap
-    fn tap(&self) -> AdxlResult<(u8, u8, u8, u8)>;
+    /// [Tap]: struct.Tap.html
+    fn tap(&self) -> AdxlResult<Tap>;
     /// Access the current tap control mode.
     fn tap_control(&self) -> AdxlResult<TapMode>;
     /// Access the current duration value for tap interrupts.
@@ -175,27 +174,14 @@ pub trait Adxl345Writer {
     fn set_power_control<PC>(&self, mode: PC) -> Result
     where
         PC: Into<PowerControl>;
-    /// Tap related settings
+    /// Set all non-control tap related values at the same time.
     ///
     /// ## Arguments
-    /// * `thresh` - Threshold value for tap interrupts.
-    /// The scale factor is 62.5 mg/LSB.
-    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the single tap/double tap interrupt(s) are enabled._
-    /// * `duration` - Time value representing the maximum time that an event
-    /// must be above the threshold to qualify as a tap event.
-    /// The scale factor is 625 μs/LSB.
-    /// A value of 0 disables the single tap/double tap functions.
-    /// * `latency` - Time value representing the wait time from the detection
-    /// of a tap event to the start of the time window during which a possible
-    /// second tap event can be detected.
-    /// The scale factor is 1.25 ms/LSB.
-    /// A value of 0 disables the double tap function.
-    /// * `window` - Time value representing the amount of time after the
-    /// expiration of the latency time during which a second valid tap can begin.
-    /// The scale factor is 1.25 ms/LSB.
-    /// A value of 0 disables the double tap function.
-    fn set_tap(&mut self, thresh: u8, duration: u8, latency: u8, window: u8) -> Result;
+    /// * `mode` - Containing values for `threshold`, `duration`, `latency`, and
+    /// `window` registers.
+    fn set_tap<T>(&mut self, mode: T) -> Result
+    where
+        T: Into<Tap>;
     /// Set tap control mode options.
     ///
     /// ## Arguments
@@ -206,6 +192,75 @@ pub trait Adxl345Writer {
     fn set_tap_control<TM>(&mut self, mode: TM) -> Result
     where
         TM: Into<TapMode>;
+}
+
+// Activity/Inactivity control mode.
+bitflags! {
+    /// Activity mode bit flags used in [activity_control()] and
+    /// [set_activity_control()] methods.
+    ///
+    /// [activity_control()]: trait.Adxl345Reader.html#method.activity_control
+    /// [set_activity_control()]: trait.Adxl345Writer.html#method.set_activity_control
+    #[derive(Default)]
+    pub struct ActivityMode: u8 {
+        /// Select activity AC-coupled operation.
+        const ACT_AC = 0x80;
+        /// Select activity DC-coupled operation.
+        const ACT_DC = 0x00;
+        /// Enable X-axis in detecting activity.
+        const ACT_X_ENABLE = 0x40;
+        /// Disable X-axis in detecting activity.
+        const ACT_X_DISABLE = 0x00;
+        /// Enable Y-axis in detecting activity.
+        const ACT_Y_ENABLE = 0x20;
+        /// Disable Y-axis in detecting activity.
+        const ACT_Y_DISABLE = 0x00;
+        /// Enable Z-axis in detecting activity.
+        const ACT_Z_ENABLE = 0x10;
+        /// Disable Z-axis in detecting activity.
+        const ACT_Z_DISABLE = 0x00;
+        /// Select inactivity AC-coupled operation.
+        const INACT_AC = 0x08;
+        /// Select inactivity DC-coupled operation.
+        const INACT_DC = 0x00;
+        /// Enable X-axis in detecting inactivity.
+        const INACT_X_ENABLE = 0x04;
+        /// Disable X-axis in detecting inactivity.
+        const INACT_X_DISABLE = 0x00;
+        /// Enable Y-axis in detecting inactivity.
+        const INACT_Y_ENABLE = 0x02;
+        /// Disable Y-axis in detecting inactivity.
+        const INACT_Y_DISABLE = 0x00;
+        /// Enable Z-axis in detecting inactivity.
+        const INACT_Z_ENABLE = 0x01;
+        /// Disable Z-axis in detecting inactivity.
+        const INACT_Z_DISABLE = 0x00;
+    }
+}
+
+// Activity/tap status.
+bitflags! {
+    /// Activity/Tap Status bit flags returned by [activity_tap_status()] method.
+    ///
+    /// The register should be read before clearing the interrupt.
+    ///
+    /// [activity_tap_status()]: trait.Adxl345Reader.html#method.activity_tap_status
+    pub struct ATStatus: u8 {
+        /// Indicate the X-axis is involved in the activity event.
+        const ACT_X = 0x40;
+        /// Indicate the Y-axis is involved in the activity event.
+        const ACT_Y = 0x20;
+        /// Indicate the Z-axis is involved in the activity event.
+        const ACT_Z = 0x10;
+        /// Indicates if the part is asleep or not.
+        const ASLEEP = 0x08;
+        /// Indicate the X-axis is involved in the tap event.
+        const TAP_X = 0x04;
+        /// Indicate the Y-axis is involved in the tap event.
+        const TAP_Y = 0x02;
+        /// Indicate the Z-axis is involved in the tap event.
+        const TAP_Z = 0x01;
+    }
 }
 
 /// Bandwidth rate control bitfields used in [bandwidth_rate()] and
@@ -293,72 +348,92 @@ pub struct PowerControl {
     power_control: [u8; 1],
 }
 
-// Activity/tap status.
-bitflags! {
-    /// Activity/Tap Status bit flags returned by [activity_tap_status()] method.
+/// Hold a collection of single/double tap non-control related values.
+///
+/// Structure is used by the [tap()] and [set_tap()] methods.
+///
+/// [tap()]: trait.Adxl345Reader.html#method.tap
+/// [set_tap()]: trait.Adxl345Writer.html#method.set_tap
+#[derive(Debug, Clone, Copy)]
+pub struct Tap {
+    /// Threshold value required to trigger a tap interrupt.
     ///
-    /// The register should be read before clearing the interrupt.
+    /// The scale factor is 62.5 mg/LSB.
     ///
-    /// [activity_tap_status()]: trait.Adxl345Reader.html#method.activity_tap_status
-    pub struct ATStatus: u8 {
-        /// Indicate the X-axis is involved in the activity event.
-        const ACT_X = 0x40;
-        /// Indicate the Y-axis is involved in the activity event.
-        const ACT_Y = 0x20;
-        /// Indicate the Z-axis is involved in the activity event.
-        const ACT_Z = 0x10;
-        /// Indicates if the part is asleep or not.
-        const ASLEEP = 0x08;
-        /// Indicate the X-axis is involved in the tap event.
-        const TAP_X = 0x04;
-        /// Indicate the Y-axis is involved in the tap event.
-        const TAP_Y = 0x02;
-        /// Indicate the Z-axis is involved in the tap event.
-        const TAP_Z = 0x01;
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the single tap/double tap interrupt(s) are enabled._
+    threshold: u8,
+    /// Time value representing the maximum time that an event must be above the
+    /// threshold to qualify as a tap event.
+    ///
+    /// The scale factor is 625 μs/LSB.
+    /// A value of 0 disables the single/double tap functions.
+    duration: u8,
+    /// Time value representing the wait time from the detection of a tap event
+    /// to the start of the time window during which a possible second tap event
+    /// can be detected.
+    ///
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    latency: u8,
+    /// Time value representing the amount of time after the expiration of the
+    /// latency time during which a second valid tap can begin.
+    ///
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    window: u8,
+}
+
+impl Tap {
+    /// Tap constructor.
+    ///
+    /// ## Arguments
+    /// * `threshold` - Threshold value required to trigger a tap interrupt.
+    /// The scale factor is 62.5 mg/LSB.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the single tap/double tap interrupt(s) are enabled._
+    /// * `duration` - Time value representing the maximum time that an event
+    /// must be above the threshold to qualify as a tap event.
+    /// The scale factor is 625 μs/LSB.
+    /// A value of 0 disables the single tap/double tap functions.
+    /// * `latency` - Time value representing the wait time from the detection
+    /// of a tap event to the start of the time window during which a possible
+    /// second tap event can be detected.
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    /// * `window` - Time value representing the amount of time after the
+    /// expiration of the latency time during which a second valid tap can begin.
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    pub fn new(threshold: u8, duration: u8, latency: u8, window: u8) -> Self {
+        Tap {
+            threshold,
+            duration,
+            latency,
+            window,
+        }
     }
 }
 
-// Activity/Inactivity control mode.
-bitflags! {
-    /// Activity mode bit flags used in [activity_control()] and
-    /// [set_activity_control()] methods.
-    ///
-    /// [activity_control()]: trait.Adxl345Reader.html#method.activity_control
-    /// [set_activity_control()]: trait.Adxl345Writer.html#method.set_activity_control
-    #[derive(Default)]
-    pub struct ActivityMode: u8 {
-        /// Select activity AC-coupled operation.
-        const ACT_AC = 0x80;
-        /// Select activity DC-coupled operation.
-        const ACT_DC = 0x00;
-        /// Enable X-axis in detecting activity.
-        const ACT_X_ENABLE = 0x40;
-        /// Disable X-axis in detecting activity.
-        const ACT_X_DISABLE = 0x00;
-        /// Enable Y-axis in detecting activity.
-        const ACT_Y_ENABLE = 0x20;
-        /// Disable Y-axis in detecting activity.
-        const ACT_Y_DISABLE = 0x00;
-        /// Enable Z-axis in detecting activity.
-        const ACT_Z_ENABLE = 0x10;
-        /// Disable Z-axis in detecting activity.
-        const ACT_Z_DISABLE = 0x00;
-        /// Select inactivity AC-coupled operation.
-        const INACT_AC = 0x08;
-        /// Select inactivity DC-coupled operation.
-        const INACT_DC = 0x00;
-        /// Enable X-axis in detecting inactivity.
-        const INACT_X_ENABLE = 0x04;
-        /// Disable X-axis in detecting inactivity.
-        const INACT_X_DISABLE = 0x00;
-        /// Enable Y-axis in detecting inactivity.
-        const INACT_Y_ENABLE = 0x02;
-        /// Disable Y-axis in detecting inactivity.
-        const INACT_Y_DISABLE = 0x00;
-        /// Enable Z-axis in detecting inactivity.
-        const INACT_Z_ENABLE = 0x01;
-        /// Disable Z-axis in detecting inactivity.
-        const INACT_Z_DISABLE = 0x00;
+impl From<(u8, u8, u8, u8)> for Tap {
+    fn from(tap: (u8, u8, u8, u8)) -> Self {
+        Tap {
+            threshold: tap.0,
+            duration: tap.1,
+            latency: tap.2,
+            window: tap.3,
+        }
+    }
+}
+
+impl From<&[u8; 4]> for Tap {
+    fn from(tap: &[u8; 4]) -> Self {
+        Tap {
+            threshold: tap[0],
+            duration: tap[1],
+            latency: tap[2],
+            window: tap[3],
+        }
     }
 }
 

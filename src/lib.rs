@@ -31,7 +31,7 @@ extern crate c2rust_bitfields;
 pub use crate::{
     cmd::{
         ATStatus, ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, BandwidthRateControl,
-        PowerControl, TapMode,
+        PowerControl, Tap, TapMode,
     },
     error::{AdxlError, AdxlResult, Result},
 };
