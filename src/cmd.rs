@@ -19,13 +19,15 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//! Contains the Analog Device ADXL345 3-Axis Digital Accelerometer register
+//! command set traits and associated parameter types.
 
 use crate::{AdxlResult, Result};
 
-/// Complete R/W command set for Analog Device ADXL345 3-Axis Digital Accelerometer.
+/// Complete R/W register command set for the accelerometer.
 pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
 
-/// Read command set for accelerometer.
+/// Read register command set for accelerometer.
 pub trait Adxl345Reader {
     /// Access the device ID.
     fn device_id(&self) -> AdxlResult<u8>;
@@ -36,7 +38,7 @@ pub trait Adxl345Reader {
     fn activity_control(&self) -> AdxlResult<ActivityMode>;
 }
 
-/// Write command set for accelerometer.
+/// Write register command set for accelerometer.
 pub trait Adxl345Writer {
     //
     // ## Per driver required stuff ##
