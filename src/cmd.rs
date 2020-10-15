@@ -43,6 +43,12 @@ pub trait Adxl345Reader {
     fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl>;
     /// Access the device ID.
     fn device_id(&self) -> AdxlResult<u8>;
+    /// Access the current interrupt control mode.
+    fn interrupt_control(&self) -> AdxlResult<IntControlMode>;
+    /// Access the current interrupt mapping mode.
+    fn interrupt_map(&self) -> AdxlResult<IntMapMode>;
+    /// Access the current interrupt source.
+    fn interrupt_source(&self) -> AdxlResult<IntSource>;
     /// Access the current power-saving features control mode.
     fn power_control(&self) -> AdxlResult<PowerControl>;
     /// Access to all non-control tap current values together as a structure.
@@ -164,6 +170,26 @@ pub trait Adxl345Writer {
         X: Into<Option<i8>>,
         Y: Into<Option<i8>>,
         Z: Into<Option<i8>>;
+    /// Set interrupt control enable options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Interrupt control mode bit flags.
+    /// See [IntControlMode] bit flags for more info.
+    ///
+    /// [IntControlMode]: struct.IntControlMode.html
+    fn set_interrupt_control<IC>(&mut self, mode: IC) -> Result
+    where
+        IC: Into<IntControlMode>;
+    /// Set interrupt mapping mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Interrupt mapping mode bit flags.
+    /// See [IntMapMode] bit flags for more info.
+    ///
+    /// [IntMapMode]: struct.IntMapMode.html
+    fn set_interrupt_map<IM>(&mut self, mode: IM) -> Result
+    where
+        IM: Into<IntMapMode>;
     /// Set power-saving features control mode options.
     ///
     /// ## Arguments
@@ -304,6 +330,149 @@ pub struct BandwidthRateControl {
     #[bitfield(name = "low_power", ty = "bool", bits = "4..=4")]
     #[bitfield(name = "rate", ty = "u8", bits = "0..=3")]
     bandwidth_control: [u8; 1],
+}
+
+// Interrupt control mode.
+bitflags! {
+    /// Interrupt enable control bit flags use by [interrupt_control()] and
+    /// [set_interrupt_control()] methods.
+    ///
+    /// [interrupt_control()]: trait.Adxl345Reader.html#method.interrupt_control
+    /// [set_interrupt_control()]: trait.Adxl345Writer.html#method.set_interrupt_control
+    #[derive(Default)]
+    pub struct IntControlMode: u8 {
+        /// Disable DATA_READY interrupt.
+        ///
+        /// Function is always enabled.
+        const DATA_READY_DISABLE = 0x00;
+        /// Enable DATA_READY interrupt.
+        const DATA_READY_ENABLE = 0x80;
+        /// Disable SINGLE_TAP interrupt and function.
+        const SINGLE_TAP_DISABLE = 0x00;
+        /// Enable SINGLE_TAP interrupt and function.
+        const SINGLE_TAP_ENABLE = 0x40;
+        /// Disable DOUBLE_TAP interrupt and function.
+        const DOUBLE_TAP_DISABLE = 0x00;
+        /// Enable DOUBLE_TAP interrupt and function.
+        const DOUBLE_TAP_ENABLE = 0x20;
+        /// Disable ACTIVITY interrupt and function.
+        const ACTIVITY_DISABLE = 0x00;
+        /// Enable ACTIVITY interrupt and function.
+        const ACTIVITY_ENABLE = 0x10;
+        /// Disable INACTIVITY interrupt and function.
+        const INACTIVITY_DISABLE = 0x00;
+        /// Enable INACTIVITY interrupt and function.
+        const INACTIVITY_ENABLE = 0x08;
+        /// Disable FREE_FALL interrupt and function.
+        const FREE_FALL_DISABLE = 0x00;
+        /// Enable FREE_FALL interrupt and function.
+        const FREE_FALL_ENABLE = 0x04;
+        /// Disable WATERMARK interrupt.
+        ///
+        /// Function is always enabled.
+        const WATERMARK_DISABLE = 0x00;
+        /// Enable WATERMARK interrupt.
+        const WATERMARK_ENABLE = 0x02;
+        /// Disable OVERRUN interrupt.
+        ///
+        /// Function is always enabled.
+        const OVERRUN_DISABLE = 0x00;
+        /// Enable OVERRUN interrupt.
+        const OVERRUN_ENABLE = 0x01;
+    }
+}
+
+// Interrupt map mode.
+bitflags! {
+    /// Interrupt map bit flags use by [interrupt_map()] and [set_interrupt_map()] methods.
+    ///
+    /// [interrupt_map()]: trait.Adxl345Reader.html#method.interrupt_map
+    /// [set_interrupt_map()]: trait.Adxl345Writer.html#method.set_interrupt_map
+    #[derive(Default)]
+    pub struct IntMapMode: u8 {
+        /// Map DATA_READY interrupt to `INT1` pin.
+        const DATA_READY_INT1 = 0x00;
+        /// Map DATA_READY interrupt to `INT2` pin.
+        const DATA_READY_INT2 = 0x80;
+        /// Map SINGLE_TAP interrupt to `INT1` pin.
+        const SINGLE_TAP_INT1 = 0x00;
+        /// Map SINGLE_TAP interrupt to `INT2` pin.
+        const SINGLE_TAP_INT2 = 0x40;
+        /// Map DOUBLE_TAP interrupt to `INT1` pin.
+        const DOUBLE_TAP_INT1 = 0x00;
+        /// Map DOUBLE_TAP interrupt to `INT2` pin.
+        const DOUBLE_TAP_INT2 = 0x20;
+        /// Map ACTIVITY interrupt to `INT1` pin.
+        const ACTIVITY_INT1 = 0x00;
+        /// Map ACTIVITY interrupt to `INT2` pin.
+        const ACTIVITY_INT2 = 0x10;
+        /// Map INACTIVITY interrupt to `INT1` pin.
+        const INACTIVITY_INT1 = 0x00;
+        /// Map INACTIVITY interrupt to `INT2` pin.
+        const INACTIVITY_INT2 = 0x08;
+        /// Map FREE_FALL interrupt to `INT1` pin.
+        const FREE_FALL_INT1 = 0x00;
+        /// Map FREE_FALL interrupt to `INT2` pin.
+        const FREE_FALL_INT2 = 0x04;
+        /// Map WATERMARK interrupt to `INT1` pin.
+        const WATERMARK_INT1 = 0x00;
+        /// Map WATERMARK interrupt to `INT2` pin.
+        const WATERMARK_INT2 = 0x02;
+        /// Map OVERRUN interrupt to `INT1` pin.
+        const OVERRUN_INT1 = 0x00;
+        /// Map OVERRUN interrupt to `INT2` pin.
+        const OVERRUN_INT2 = 0x01;
+    }
+}
+
+// Interrupt source.
+bitflags! {
+    /// Interrupt source bit flags use by [interrupt_source()] method.
+    ///
+    /// [interrupt_source()]: trait.Adxl345Reader.html#method.interrupt_source
+    #[derive(Default)]
+    pub struct IntSource: u8 {
+        /// Function triggered DATA_READY event.
+        ///
+        /// Event always visible here.
+        ///
+        /// Cleared by reading data from the data registers.
+        /// May require multiple reads.
+        const DATA_READY = 0x80;
+        /// Function triggered SINGLE_TAP event.
+        ///
+        /// Interrupt must be enabled to see here.
+        const SINGLE_TAP = 0x40;
+        /// Function triggered DOUBLE_TAP event.
+        ///
+        /// Interrupt must be enabled to see here.
+        const DOUBLE_TAP = 0x20;
+        /// Function triggered ACTIVITY event.
+        ///
+        /// Interrupt must be enabled to see here.
+        const ACTIVITY = 0x10;
+        /// Function triggered INACTIVITY event.
+        ///
+        /// Interrupt must be enabled to see here.
+        const INACTIVITY = 0x08;
+        /// Function triggered FREE_FALL event.
+        ///
+        /// Interrupt must be enabled to see here.
+        const FREE_FALL = 0x04;
+        /// Function triggered WATERMARK event.
+        ///
+        /// Event always visible here.
+        ///
+        /// Cleared by reading data from the data registers.
+        /// May require multiple reads.
+        const WATERMARK = 0x02;
+        /// Function triggered OVERRUN event.
+        ///
+        /// Event always visible here.
+        ///
+        /// Cleared by reading data from the data registers.
+        const OVERRUN = 0x01;
+    }
 }
 
 /// Power control bitfields used in [power_control()] and [set_power_control()]
