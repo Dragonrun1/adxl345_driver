@@ -21,6 +21,10 @@
 // SOFTWARE.
 //! Contains the Analog Device ADXL345 3-Axis Digital Accelerometer register
 //! command set traits and associated parameter types.
+//!
+//! Control set traits are based on the [ADXL345 Datasheet] information.
+//!
+//! [ADXL345 Datasheet]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
 
 use crate::{AdxlResult, Result};
 
@@ -41,6 +45,8 @@ pub trait Adxl345Reader {
     fn activity_tap_status(&self) -> AdxlResult<ATStatus>;
     /// Access the current data rate and power mode control mode.
     fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl>;
+    /// Access the current data format mode.
+    fn data_format(&self) -> AdxlResult<DataFormat>;
     /// Access the device ID.
     fn device_id(&self) -> AdxlResult<u8>;
     /// Access the current interrupt control mode.
@@ -121,6 +127,16 @@ pub trait Adxl345Writer {
     fn set_bandwidth_rate<BRC>(&self, mode: BRC) -> Result
     where
         BRC: Into<BandwidthRateControl>;
+    /// Set data format mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Data format mode bit flags.
+    /// See [DataFormat] bit flags for more info.
+    ///
+    /// [DataFormat]: struct.DataFormat.html
+    fn set_data_format<DF>(&mut self, mode: DF) -> Result
+    where
+        DF: Into<DataFormat>;
     /// Used to set threshold and time values for free-fall detection.
     ///
     /// ## Arguments

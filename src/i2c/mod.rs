@@ -19,23 +19,5 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//! Provides a complete ADXL345 compatible command set and supporting code.
-//!
-//! This is meant to be a hardware level driver interface for the device.
 
-#[macro_use]
-extern crate bitflags;
-#[macro_use]
-extern crate c2rust_bitfields;
-
-mod cmd;
-mod error;
-mod i2c;
-
-pub use crate::{
-    cmd::{
-        ATStatus, ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, BandwidthRateControl,
-        DataFormat, IntControlMode, IntMapMode, IntSource, PowerControl, Tap, TapMode,
-    },
-    error::{AdxlError, AdxlResult, Result},
-};
+pub struct Device {}
