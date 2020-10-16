@@ -91,9 +91,9 @@ pub trait Adxl345Writer {
     /// after doing any needed per command processing.
     ///
     /// ## Arguments
-    /// * `addr` - Register address (offset) to be written.
+    /// * `register` - Register address (offset) to be written.
     /// * `byte` - Byte of data to be written into the given register.
-    fn command(&mut self, addr: u8, byte: u8) -> Result;
+    fn command(&mut self, register: u8, byte: u8) -> Result;
     /// Used to initialize the accelerometer into a know state.
     fn init(&mut self) -> Result;
     //
@@ -348,6 +348,54 @@ pub struct BandwidthRateControl {
     bandwidth_control: [u8; 1],
 }
 
+/// Data format bitfields used in [data_format()] and [set_data_format()]
+/// methods.
+///
+/// The data format register controls the format of the data registers values.
+/// All returned data, except for the ±16 g range, will be clipped to avoid
+/// rollover.
+///
+/// [data_format()]: trait.Adxl345Reader.html#method.data_format
+/// [set_data_format()]: trait.Adxl345Writer.html#method.set_data_format
+#[repr(C, align(1))]
+#[derive(BitfieldStruct, Clone, Copy)]
+pub struct DataFormat {
+    /// Bit fields:
+    /// * `self_test` - (Bit 7) A `true` applies a self-test force to the sensor,
+    /// causing a shift in the output data.
+    /// A `false` disable the self-test force.
+    /// * `spi` - (Bit 6) A `true` sets 3-wire SPI mode and `false` 4-wire mode.
+    /// * `int_invert` - (Bit 5) A `true` switches the interrupt pins to active
+    /// low, while `false` sets them to active high.
+    /// * `full_res` - (Bit 3) When `true` puts the device into full resolution
+    /// mode where the output resolution increases with the g-force range while
+    /// maintaining a 3.9mg/LSB scale factor.
+    /// When `false` the device is in 10-bit mode where the `range` bitfield
+    /// determines the maximum g-force range and scale factor.
+    /// See the table below for more information.
+    /// * `justify` - (Bit 2) When `true` selects left-justified (MSB) mode.
+    /// A `false` selects right-justified mode with sign extension.
+    /// * `range` - (Bits 0-1) Controls the g-force range and scale factor of
+    /// readings as described in table.
+    ///
+    /// g-force range table:
+    ///
+    /// |  g Range | mg/LSB | `range` bits |
+    /// | -------: | -----: | -----------: |
+    /// |  &pm; 2g |  3.9mg |           00 |
+    /// |  &pm; 4g |  7.8mg |           01 |
+    /// |  &pm; 8g | 15.6mg |           10 |
+    /// | &pm; 16g | 31.2mg |           11 |
+    ///
+    #[bitfield(name = "self_test", ty = "bool", bits = "7..=7")]
+    #[bitfield(name = "spi", ty = "bool", bits = "6..=6")]
+    #[bitfield(name = "int_invert", ty = "bool", bits = "5..=5")]
+    #[bitfield(name = "full_res", ty = "bool", bits = "3..=3")]
+    #[bitfield(name = "justify", ty = "bool", bits = "2..=2")]
+    #[bitfield(name = "range", ty = "u8", bits = "0..=1")]
+    data_format: [u8; 1],
+}
+
 // Interrupt control mode.
 bitflags! {
     /// Interrupt enable control bit flags use by [interrupt_control()] and
@@ -508,8 +556,8 @@ pub struct PowerControl {
     /// When bit is 0 then the activity/inactivity settings are ignored.
     /// * `measure` - (Bit 3) Standby/measurement mode.
     /// The ADXL345 is in standby mode at power up.
-    /// * `sleep` - (Bit 2) Puts part into sleep mode.
-    /// * `wakeup` - (Bits 0-1) Control the frequency of readings in sleep mode
+    /// * `sleep` - (Bit 2) Puts the part into sleep mode.
+    /// * `wakeup` - (Bits 0-1) Controls the frequency of readings in sleep mode
     /// as described in table.
     ///
     /// ___Note:___ _It is recommended that the `measure` bit be placed into
