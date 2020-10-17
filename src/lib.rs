@@ -35,7 +35,8 @@ mod i2c;
 pub use crate::{
     cmd::{
         ATStatus, ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, BandwidthRateControl,
-        DataFormat, IntControlMode, IntMapMode, IntSource, PowerControl, Tap, TapMode,
+        DataFormat, FifoControl, FifoStatus, IntControlMode, IntMapMode, IntSource, PowerControl,
+        Tap, TapMode,
     },
     error::{AdxlError, AdxlResult, Result},
 };

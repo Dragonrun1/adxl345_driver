@@ -49,6 +49,10 @@ pub trait Adxl345Reader {
     fn data_format(&self) -> AdxlResult<DataFormat>;
     /// Access the device ID.
     fn device_id(&self) -> AdxlResult<u8>;
+    /// Access the current fifo control mode.
+    fn fifo_control(&self) -> AdxlResult<FifoControl>;
+    /// Access the current fifo status.
+    fn fifo_status(&self) -> AdxlResult<FifoStatus>;
     /// Access the current interrupt control mode.
     fn interrupt_control(&self) -> AdxlResult<IntControlMode>;
     /// Access the current interrupt mapping mode.
@@ -137,6 +141,16 @@ pub trait Adxl345Writer {
     fn set_data_format<DF>(&mut self, mode: DF) -> Result
     where
         DF: Into<DataFormat>;
+    /// Set fifo control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Fifo control mode bit flags.
+    /// See [FifoControl] bit flags for more info.
+    ///
+    /// [FifoControl]: struct.FifoControl.html
+    fn set_fifo_control<FC>(&mut self, mode: FC) -> Result
+    where
+        FC: Into<FifoControl>;
     /// Used to set threshold and time values for free-fall detection.
     ///
     /// ## Arguments
@@ -394,6 +408,63 @@ pub struct DataFormat {
     #[bitfield(name = "justify", ty = "bool", bits = "2..=2")]
     #[bitfield(name = "range", ty = "u8", bits = "0..=1")]
     data_format: [u8; 1],
+}
+
+/// Fifo buffer control bitfields used in [fifo_control()] and
+/// [set_fifo_control()] methods.
+///
+/// [fifo_control()]: trait.Adxl345Reader.html#method.fifo_control
+/// [set_fifo_control()]: trait.Adxl345Writer.html#method.set_fifo_control
+#[repr(C, align(1))]
+#[derive(BitfieldStruct, Clone, Copy)]
+pub struct FifoControl {
+    /// Bit fields:
+    /// * `fifo_mode` - (Bits 6-7) One of the fifo modes:
+    ///
+    /// | Mode    |`fifo_mode` bits | Function          |
+    /// | ------- | --------------: | ----------------- |
+    /// | Bypass  |              00 | FIFO is bypassed. |
+    /// | FIFO    |              01 | FIFO collects up to 32 values and then waits until room is available in FIFO to write again. |
+    /// | Stream  |              10 | FIFO holds the last 32 data values. Oldest data is overwritten if not read quickly enough. |
+    /// | Trigger |              11 | Retains the preceding `samples` worth of FIFO entries then continues filling FIFO with entries until full. |
+    ///
+    /// * `trigger` - (Bit 5) When `true` links trigger event to INT2 else to INT1.
+    /// * `samples` - (Bits 0-4) The function of these bits depends on the `fifo_mode`.
+    /// See the table below for `fifo_mode` vs `samples` function.
+    /// A 0 value will immediately set the `watermark` bit in the interrupt
+    /// source register regardless of the FIFO mode.
+    /// ___Note:___ _A 0 value should never be used when `fifo_mode` is set to
+    /// trigger mode._
+    ///
+    /// Samples bits functions:
+    ///
+    /// | `fifo_mode` | `samples` function |
+    /// | ----------- | ------------------ |
+    /// | Bypass      | None.              |
+    /// | FIFO        | Specifies number of FIFO entries needed before `watermark` interrupt triggers. |
+    /// | Stream      | Specifies number of FIFO entries needed before `watermark` interrupt triggers. |
+    /// | Trigger     | Specifies how many FIFO entries to retain before trigger event. |
+    ///
+    #[bitfield(name = "fifo_mode", ty = "u8", bits = "6..=7")]
+    #[bitfield(name = "trigger", ty = "bool", bits = "5..=5")]
+    #[bitfield(name = "samples", ty = "u8", bits = "0..=4")]
+    fifo_control: [u8; 1],
+}
+
+/// Fifo buffer status bitfields used in [fifo_status()] method.
+///
+/// [fifo_status()]: trait.Adxl345Reader.html#method.fifo_status
+#[repr(C, align(1))]
+#[derive(BitfieldStruct, Clone, Copy)]
+pub struct FifoStatus {
+    /// Bit fields:
+    /// * `fifo_trigger` - (Bit 7) Is `true` if trigger event occurred.
+    /// * `entries` - (Bits 0-5) Reports how many entries are available in FIFO.
+    /// ___Note:___ _Maximum value is 33 since FIFO can store 32 entries plus
+    /// the one available from the output filter of the device._
+    #[bitfield(name = "fifo_trigger", ty = "bool", bits = "7..=7")]
+    #[bitfield(name = "entries", ty = "u8", bits = "0..=5")]
+    fifo_status: [u8; 1],
 }
 
 // Interrupt control mode.
