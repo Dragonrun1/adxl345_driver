@@ -33,6 +33,26 @@ pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
 
 /// Read register command set for accelerometer.
 pub trait Adxl345Reader {
+    //
+    // ## Per driver required stuff ##
+    //
+    /// Provides access to individual register values.
+    ///
+    /// This is __NOT__ part of the actual ADXL345 command register set but a
+    /// necessary method to interface with all drivers.
+    ///
+    /// Provides a place for drivers to do any needed shared command processing.
+    ///
+    /// The implementation of most other methods in the command set will use
+    /// this trait after doing any per command processing.
+    ///
+    /// ## Arguments
+    /// * `register` - Register address (offset) to be written.
+    ///
+    fn access(&self, register: u8) -> AdxlResult<u8>;
+    //
+    // ## Shouldn't be a need to change these in driver implementations. ##
+    //
     /// Access the current activity control mode.
     fn activity_control(&self) -> AdxlResult<ActivityMode>;
     /// Access the cause of tap or activity event (interrupt).
@@ -89,16 +109,20 @@ pub trait Adxl345Writer {
     /// This is __NOT__ part of the actual ADXL345 command register set but a
     /// necessary method to interface with all drivers.
     ///
-    /// Provides a place for drivers to do any needed common command processing.
+    /// Provides a place for drivers to do any needed shared command processing.
     ///
-    /// The implementation of the command set in this trait will use this method
-    /// after doing any needed per command processing.
+    /// The implementation of most other methods in the command set will use
+    /// this trait after doing any per command processing.
     ///
     /// ## Arguments
     /// * `register` - Register address (offset) to be written.
     /// * `byte` - Byte of data to be written into the given register.
     fn command(&mut self, register: u8, byte: u8) -> Result;
     /// Used to initialize the accelerometer into a know state.
+    ///
+    /// Typically this will be only be called from a `new()` method of the
+    /// implementation but there can be rare times when the library user needs
+    /// access after instance has been created.
     fn init(&mut self) -> Result;
     //
     // ## Shouldn't be a need to change these in driver implementations. ##
