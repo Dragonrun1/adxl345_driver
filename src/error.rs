@@ -32,6 +32,8 @@ pub enum AdxlError {
     /// Used if under-laying IO Error happens.
     #[error("IO write failed")]
     Write(#[from] std::io::Error),
+    #[error("Received one or more set unknown mode bit(s) in value: {0}")]
+    UnknownModeBit(u8),
 }
 
 impl From<AdxlError> for std::io::Error {
