@@ -26,7 +26,8 @@
 //!
 //! [ADXL345 Datasheet]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
 
-use crate::{AdxlResult, Result};
+use crate::{AdxlError, AdxlResult, Result};
+use std::convert::{TryFrom, TryInto};
 
 /// Complete R/W register command set for the accelerometer.
 pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
@@ -47,14 +48,20 @@ pub trait Adxl345Reader {
     /// this trait after doing any per command processing.
     ///
     /// ## Arguments
-    /// * `register` - Register address (offset) to be written.
+    /// * `register` - Register address to be accessed (read).
     ///
     fn access(&self, register: u8) -> AdxlResult<u8>;
     //
     // ## Shouldn't be a need to change these in driver implementations. ##
     //
     /// Access the current activity control mode.
-    fn activity_control(&self) -> AdxlResult<ActivityMode>;
+    fn activity_control(&self) -> AdxlResult<ActivityMode> {
+        let register = 0x27;
+        let data = self.access(register)?;
+        let result =
+            ActivityMode::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the cause of tap or activity event (interrupt).
     ///
     /// ___Note:___ _The register value should be read before clearing the
@@ -62,41 +69,104 @@ pub trait Adxl345Reader {
     ///
     /// Disabling an axis from participation clears the corresponding source bit
     /// when the next activity or single tap/double tap event occurs.
-    fn activity_tap_status(&self) -> AdxlResult<ATStatus>;
+    fn activity_tap_status(&self) -> AdxlResult<ATStatus> {
+        let register = 0x2B;
+        let data = self.access(register)?;
+        let result = ATStatus::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the current data rate and power mode control mode.
-    fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl>;
+    fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl> {
+        let register = 0x2B;
+        Ok(self.access(register)?.try_into()?)
+    }
     /// Access the current data format mode.
-    fn data_format(&self) -> AdxlResult<DataFormat>;
+    fn data_format(&self) -> AdxlResult<DataFormat> {
+        let register = 0x31;
+        Ok(self.access(register)?.try_into()?)
+    }
     /// Access the device ID.
-    fn device_id(&self) -> AdxlResult<u8>;
+    fn device_id(&self) -> AdxlResult<u8> {
+        let register = 0x00;
+        Ok(self.access(register)?)
+    }
     /// Access the current fifo control mode.
-    fn fifo_control(&self) -> AdxlResult<FifoControl>;
+    fn fifo_control(&self) -> AdxlResult<FifoControl> {
+        let register = 0x2B;
+        Ok(self.access(register)?.into())
+    }
     /// Access the current fifo status.
-    fn fifo_status(&self) -> AdxlResult<FifoStatus>;
+    fn fifo_status(&self) -> AdxlResult<FifoStatus> {
+        let register = 0x39;
+        Ok(self.access(register)?.try_into()?)
+    }
     /// Access the current interrupt control mode.
-    fn interrupt_control(&self) -> AdxlResult<IntControlMode>;
+    fn interrupt_control(&self) -> AdxlResult<IntControlMode> {
+        let register = 0x2e;
+        let data = self.access(register)?;
+        let result =
+            IntControlMode::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the current interrupt mapping mode.
-    fn interrupt_map(&self) -> AdxlResult<IntMapMode>;
+    fn interrupt_map(&self) -> AdxlResult<IntMapMode> {
+        let register = 0x2f;
+        let data = self.access(register)?;
+        let result = IntMapMode::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the current interrupt source.
-    fn interrupt_source(&self) -> AdxlResult<IntSource>;
+    fn interrupt_source(&self) -> AdxlResult<IntSource> {
+        let register = 0x30;
+        let data = self.access(register)?;
+        let result = IntSource::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the current power-saving features control mode.
-    fn power_control(&self) -> AdxlResult<PowerControl>;
+    fn power_control(&self) -> AdxlResult<PowerControl> {
+        let register = 0x2d;
+        Ok(self.access(register)?.try_into()?)
+    }
     /// Access to all non-control tap current values together as a structure.
     ///
     /// See [Tap] for more information.
     ///
     /// [Tap]: struct.Tap.html
-    fn tap(&self) -> AdxlResult<Tap>;
+    fn tap(&self) -> AdxlResult<Tap> {
+        let registers = [0x1d, 0x21, 0x22, 0x23];
+        let mut values = [0u8; 4];
+        for (idx, register) in registers.iter().enumerate() {
+            values[idx] = self.access(*register)?;
+        }
+        Ok(values.into())
+    }
     /// Access the current tap control mode.
-    fn tap_control(&self) -> AdxlResult<TapMode>;
+    fn tap_control(&self) -> AdxlResult<TapMode> {
+        let register = 0x2a;
+        let data = self.access(register)?;
+        let result = TapMode::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
+        Ok(result)
+    }
     /// Access the current duration value for tap interrupts.
-    fn tap_duration(&self) -> AdxlResult<u8>;
+    fn tap_duration(&self) -> AdxlResult<u8> {
+        let register = 0x21;
+        Ok(self.access(register)?)
+    }
     /// Access the current latency value for tap interrupts.
-    fn tap_latency(&self) -> AdxlResult<u8>;
+    fn tap_latency(&self) -> AdxlResult<u8> {
+        let register = 0x22;
+        Ok(self.access(register)?)
+    }
     /// Access the current threshold value for tap interrupts.
-    fn tap_threshold(&self) -> AdxlResult<u8>;
+    fn tap_threshold(&self) -> AdxlResult<u8> {
+        let register = 0x1d;
+        Ok(self.access(register)?)
+    }
     /// Access the current window value for tap interrupts.
-    fn tap_window(&self) -> AdxlResult<u8>;
+    fn tap_window(&self) -> AdxlResult<u8> {
+        let register = 0x23;
+        Ok(self.access(register)?)
+    }
 }
 
 /// Write register command set for accelerometer.
@@ -115,7 +185,7 @@ pub trait Adxl345Writer {
     /// this trait after doing any per command processing.
     ///
     /// ## Arguments
-    /// * `register` - Register address (offset) to be written.
+    /// * `register` - Register address to be written.
     /// * `byte` - Byte of data to be written into the given register.
     fn command(&mut self, register: u8, byte: u8) -> Result;
     /// Used to initialize the accelerometer into a know state.
@@ -383,7 +453,19 @@ pub struct BandwidthRateControl {
     ///
     #[bitfield(name = "low_power", ty = "bool", bits = "4..=4")]
     #[bitfield(name = "rate", ty = "u8", bits = "0..=3")]
-    bandwidth_control: [u8; 1],
+    byte: [u8; 1],
+}
+
+impl TryFrom<u8> for BandwidthRateControl {
+    type Error = AdxlError;
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        // Bit-wise AND with negative mask of allowed bitfields.
+        if value & !0x1f == 0 {
+            Ok(Self { byte: [value; 1] })
+        } else {
+            Err(AdxlError::UnknownModeBit(value))
+        }
+    }
 }
 
 /// Data format bitfields used in [data_format()] and [set_data_format()]
@@ -431,7 +513,20 @@ pub struct DataFormat {
     #[bitfield(name = "full_res", ty = "bool", bits = "3..=3")]
     #[bitfield(name = "justify", ty = "bool", bits = "2..=2")]
     #[bitfield(name = "range", ty = "u8", bits = "0..=1")]
-    data_format: [u8; 1],
+    byte: [u8; 1],
+}
+
+impl TryFrom<u8> for DataFormat {
+    type Error = AdxlError;
+    //noinspection DuplicatedCode
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        // Bit-wise AND with negative mask of allowed bitfields.
+        if value & !0xef == 0 {
+            Ok(Self { byte: [value; 1] })
+        } else {
+            Err(AdxlError::UnknownModeBit(value))
+        }
+    }
 }
 
 /// Fifo buffer control bitfields used in [fifo_control()] and
@@ -472,7 +567,13 @@ pub struct FifoControl {
     #[bitfield(name = "fifo_mode", ty = "u8", bits = "6..=7")]
     #[bitfield(name = "trigger", ty = "bool", bits = "5..=5")]
     #[bitfield(name = "samples", ty = "u8", bits = "0..=4")]
-    fifo_control: [u8; 1],
+    byte: [u8; 1],
+}
+
+impl From<u8> for FifoControl {
+    fn from(value: u8) -> Self {
+        Self { byte: [value; 1] }
+    }
 }
 
 /// Fifo buffer status bitfields used in [fifo_status()] method.
@@ -488,7 +589,20 @@ pub struct FifoStatus {
     /// the one available from the output filter of the device._
     #[bitfield(name = "fifo_trigger", ty = "bool", bits = "7..=7")]
     #[bitfield(name = "entries", ty = "u8", bits = "0..=5")]
-    fifo_status: [u8; 1],
+    byte: [u8; 1],
+}
+
+impl TryFrom<u8> for FifoStatus {
+    type Error = AdxlError;
+    //noinspection DuplicatedCode
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        // Bit-wise AND with negative mask of allowed bitfields.
+        if value & !0xbf == 0 {
+            Ok(Self { byte: [value; 1] })
+        } else {
+            Err(AdxlError::UnknownModeBit(value))
+        }
+    }
 }
 
 // Interrupt control mode.
@@ -673,7 +787,20 @@ pub struct PowerControl {
     #[bitfield(name = "measure", ty = "bool", bits = "3..=3")]
     #[bitfield(name = "sleep", ty = "bool", bits = "2..=2")]
     #[bitfield(name = "wakeup", ty = "u8", bits = "0..=1")]
-    power_control: [u8; 1],
+    byte: [u8; 1],
+}
+
+impl TryFrom<u8> for PowerControl {
+    type Error = AdxlError;
+    //noinspection DuplicatedCode
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        // Bit-wise AND with negative mask of allowed bitfields.
+        if value & !0x3f == 0 {
+            Ok(Self { byte: [value; 1] })
+        } else {
+            Err(AdxlError::UnknownModeBit(value))
+        }
+    }
 }
 
 /// Hold a collection of single/double tap non-control related values.
@@ -754,8 +881,8 @@ impl From<(u8, u8, u8, u8)> for Tap {
     }
 }
 
-impl From<&[u8; 4]> for Tap {
-    fn from(tap: &[u8; 4]) -> Self {
+impl From<[u8; 4]> for Tap {
+    fn from(tap: [u8; 4]) -> Self {
         Tap {
             threshold: tap[0],
             duration: tap[1],
