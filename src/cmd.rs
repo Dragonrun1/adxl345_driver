@@ -54,7 +54,7 @@ pub trait Adxl345Reader {
     /// Access the 3-axis of acceleration data together.
     fn acceleration(&self) -> AdxlResult<(i16, i16, i16)>;
     //
-    // ## Shouldn't be a need to change these in driver implementations. ##
+    // ## Shouldn't be a need to change these methods in driver implementations. ##
     //
     // ### Convenience methods which allow accessing registers in related sets.
     //
@@ -251,7 +251,7 @@ pub trait Adxl345Writer {
     /// access after instance has been created.
     fn init(&mut self) -> Result;
     //
-    // ## Shouldn't be a need to change these in driver implementations. ##
+    // ## Shouldn't be a need to change these methods in driver implementations. ##
     //
     // ### Convenience methods which allow setting registers in related sets.
     //
