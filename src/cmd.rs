@@ -51,16 +51,50 @@ pub trait Adxl345Reader {
     /// * `register` - Register address to be accessed (read).
     ///
     fn access(&self, register: u8) -> AdxlResult<u8>;
+    /// Access the 3-axis of acceleration data together.
+    fn acceleration(&self) -> AdxlResult<(i16, i16, i16)>;
     //
     // ## Shouldn't be a need to change these in driver implementations. ##
     //
-    /// Access the current activity control mode.
+    // ### Convenience methods which allow accessing registers in related sets.
+    //
+    /// Access the current free-fall threshold and time values.
+    fn free_fall(&self) -> AdxlResult<(u8, u8)> {
+        Ok((self.free_fall_threshold()?, self.free_fall_time()?))
+    }
+    /// Access all 3-axis of the offset adjustments.
+    fn offset_adjustment(&self) -> AdxlResult<(i8, i8, i8)> {
+        Ok((self.x_offset()?, self.y_offset()?, self.z_offset()?))
+    }
+    /// Access to all non-control tap current values together as a structure.
+    ///
+    /// See [Tap] for more information.
+    ///
+    /// [Tap]: struct.Tap.html
+    fn tap(&self) -> AdxlResult<Tap> {
+        let values = [
+            self.tap_threshold()?,
+            self.tap_duration()?,
+            self.tap_latency()?,
+            self.tap_window()?,
+        ];
+        Ok(values.into())
+    }
+    //
+    // ### Per register access methods.
+    //
+    /// Access the current axis activity/inactivity control mode.
     fn activity_control(&self) -> AdxlResult<ActivityMode> {
         let register = 0x27;
         let data = self.access(register)?;
         let result =
             ActivityMode::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
         Ok(result)
+    }
+    /// Access the current activity threshold value.
+    fn activity_threshold(&self) -> AdxlResult<u8> {
+        let register = 0x24;
+        Ok(self.access(register)?)
     }
     /// Access the cause of tap or activity event (interrupt).
     ///
@@ -70,14 +104,14 @@ pub trait Adxl345Reader {
     /// Disabling an axis from participation clears the corresponding source bit
     /// when the next activity or single tap/double tap event occurs.
     fn activity_tap_status(&self) -> AdxlResult<ATStatus> {
-        let register = 0x2B;
+        let register = 0x2b;
         let data = self.access(register)?;
         let result = ATStatus::from_bits(data).ok_or_else(|| AdxlError::UnknownModeBit(data))?;
         Ok(result)
     }
     /// Access the current data rate and power mode control mode.
     fn bandwidth_rate(&self) -> AdxlResult<BandwidthRateControl> {
-        let register = 0x2B;
+        let register = 0x2c;
         Ok(self.access(register)?.try_into()?)
     }
     /// Access the current data format mode.
@@ -90,15 +124,35 @@ pub trait Adxl345Reader {
         let register = 0x00;
         Ok(self.access(register)?)
     }
+    /// Access the current free-fall threshold value.
+    fn free_fall_threshold(&self) -> AdxlResult<u8> {
+        let register = 0x28;
+        Ok(self.access(register)?)
+    }
+    /// Access the current free-fall threshold value.
+    fn free_fall_time(&self) -> AdxlResult<u8> {
+        let register = 0x29;
+        Ok(self.access(register)?)
+    }
     /// Access the current fifo control mode.
     fn fifo_control(&self) -> AdxlResult<FifoControl> {
-        let register = 0x2B;
+        let register = 0x38;
         Ok(self.access(register)?.into())
     }
     /// Access the current fifo status.
     fn fifo_status(&self) -> AdxlResult<FifoStatus> {
         let register = 0x39;
         Ok(self.access(register)?.try_into()?)
+    }
+    /// Access the current inactivity threshold value.
+    fn inactivity_threshold(&self) -> AdxlResult<u8> {
+        let register = 0x25;
+        Ok(self.access(register)?)
+    }
+    /// Access the current inactivity time value.
+    fn inactivity_time(&self) -> AdxlResult<u8> {
+        let register = 0x26;
+        Ok(self.access(register)?)
     }
     /// Access the current interrupt control mode.
     fn interrupt_control(&self) -> AdxlResult<IntControlMode> {
@@ -127,19 +181,6 @@ pub trait Adxl345Reader {
         let register = 0x2d;
         Ok(self.access(register)?.try_into()?)
     }
-    /// Access to all non-control tap current values together as a structure.
-    ///
-    /// See [Tap] for more information.
-    ///
-    /// [Tap]: struct.Tap.html
-    fn tap(&self) -> AdxlResult<Tap> {
-        let registers = [0x1d, 0x21, 0x22, 0x23];
-        let mut values = [0u8; 4];
-        for (idx, register) in registers.iter().enumerate() {
-            values[idx] = self.access(*register)?;
-        }
-        Ok(values.into())
-    }
     /// Access the current tap control mode.
     fn tap_control(&self) -> AdxlResult<TapMode> {
         let register = 0x2a;
@@ -166,6 +207,21 @@ pub trait Adxl345Reader {
     fn tap_window(&self) -> AdxlResult<u8> {
         let register = 0x23;
         Ok(self.access(register)?)
+    }
+    /// Access the current x-axis offset adjustment value.
+    fn x_offset(&self) -> AdxlResult<i8> {
+        let register = 0x1e;
+        Ok(self.access(register)? as i8)
+    }
+    /// Access the current y-axis offset adjustment value.
+    fn y_offset(&self) -> AdxlResult<i8> {
+        let register = 0x1f;
+        Ok(self.access(register)? as i8)
+    }
+    /// Access the current z-axis offset adjustment value.
+    fn z_offset(&self) -> AdxlResult<i8> {
+        let register = 0x20;
+        Ok(self.access(register)? as i8)
     }
 }
 
