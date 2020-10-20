@@ -253,54 +253,22 @@ pub trait Adxl345Writer {
     //
     // ## Shouldn't be a need to change these in driver implementations. ##
     //
-    /// Set the activity threshold.
+    // ### Convenience methods which allow setting registers in related sets.
+    //
+    /// Used to set the threshold for detecting activity.
     ///
     /// ## Arguments
     /// * `thresh` - Threshold value for detecting activity.
     /// The scale factor is 62.5 mg/LSB.
     /// ___Note:___ _that a value of 0 may result in undesirable behavior if
-    /// the activity interrupt is enabled._
-    fn set_activity(&mut self, thresh: u8) -> Result;
-    /// Set activity/inactivity control mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Activity mode bit flags.
-    /// See [ActivityMode] bit flags for more info.
-    ///
-    /// [ActivityMode]: struct.ActivityMode.html
-    fn set_activity_control<AM>(&mut self, mode: AM) -> Result
-    where
-        AM: Into<ActivityMode>;
-    /// Set data rate and power mode control mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Data rate and power mode bit flags.
-    /// See [BandwidthRateControl] bit flags for more info.
-    ///
-    /// [BandwidthRateControl]: struct.BandwidthRateControl.html
-    fn set_bandwidth_rate<BRC>(&self, mode: BRC) -> Result
-    where
-        BRC: Into<BandwidthRateControl>;
-    /// Set data format mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Data format mode bit flags.
-    /// See [DataFormat] bit flags for more info.
-    ///
-    /// [DataFormat]: struct.DataFormat.html
-    fn set_data_format<DF>(&mut self, mode: DF) -> Result
-    where
-        DF: Into<DataFormat>;
-    /// Set fifo control mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Fifo control mode bit flags.
-    /// See [FifoControl] bit flags for more info.
-    ///
-    /// [FifoControl]: struct.FifoControl.html
-    fn set_fifo_control<FC>(&mut self, mode: FC) -> Result
-    where
-        FC: Into<FifoControl>;
+    /// the inactivity interrupt is enabled._
+    /// * `time` - Time value representing the amount of time that acceleration
+    /// must be less than the value in `thresh` for inactivity to be declared.
+    /// The scale factor is 1 sec/LSB.
+    fn set_inactivity(&mut self, thresh: u8, time: u8) -> Result {
+        self.set_inactivity_threshold(thresh)?;
+        self.set_inactivity_time(time)
+    }
     /// Used to set threshold and time values for free-fall detection.
     ///
     /// ## Arguments
@@ -315,18 +283,158 @@ pub trait Adxl345Writer {
     /// Recommended values between 100ms and 350ms (0x14 - 0x46).
     /// ___Note:___ _that a value of 0 may result in undesirable behavior if
     /// the free-fall interrupt is enabled._
-    fn set_free_fall(&mut self, thresh: u8, time: u8) -> Result;
-    /// Used to set the threshold for detecting activity.
+    fn set_free_fall(&mut self, thresh: u8, time: u8) -> Result {
+        self.set_free_fall_threshold(thresh)?;
+        self.set_free_fall_time(time)
+    }
+    //
+    // ### Per register access methods.
+    //
+    /// Set activity/inactivity control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Activity mode bit flags.
+    /// See [ActivityMode] bit flags for more info.
+    ///
+    /// [ActivityMode]: struct.ActivityMode.html
+    fn set_activity_control<AM>(&mut self, mode: AM) -> Result
+    where
+        AM: Into<ActivityMode>,
+    {
+        let register = 0x27;
+        self.command(register, mode.into().bits())
+    }
+    /// Set the activity threshold.
+    ///
+    /// ## Arguments
+    /// * `thresh` - Threshold value for detecting activity.
+    /// The scale factor is 62.5 mg/LSB.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the activity interrupt is enabled._
+    fn set_activity_threshold(&mut self, thresh: u8) -> Result {
+        let register = 0x24;
+        self.command(register, thresh)
+    }
+    /// Set data rate and power mode control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Data rate and power mode bit flags.
+    /// See [BandwidthRateControl] bit flags for more info.
+    ///
+    /// [BandwidthRateControl]: struct.BandwidthRateControl.html
+    fn set_bandwidth_rate<BRC>(&mut self, mode: BRC) -> Result
+    where
+        BRC: Into<BandwidthRateControl>,
+    {
+        let register = 0x2c;
+        self.command(register, mode.into().byte[0])
+    }
+    /// Set data format mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Data format mode bit flags.
+    /// See [DataFormat] bit flags for more info.
+    ///
+    /// [DataFormat]: struct.DataFormat.html
+    fn set_data_format<DF>(&mut self, mode: DF) -> Result
+    where
+        DF: Into<DataFormat>,
+    {
+        let register = 0x31;
+        self.command(register, mode.into().byte[0])
+    }
+    /// Set the free-fall threshold.
+    ///
+    /// ## Arguments
+    /// * `thresh` - Threshold value for detecting activity.
+    /// The scale factor is 62.5 mg/LSB.
+    /// Values between 300 mg and 600 mg(0x05 to 0x09) are recommended.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the free-fall interrupt is enabled._
+    fn set_free_fall_threshold(&mut self, thresh: u8) -> Result {
+        let register = 0x28;
+        self.command(register, thresh)
+    }
+    /// Set the free-fall time.
+    ///
+    /// ## Arguments
+    /// * `time` - Time value representing the minimum amount of time that
+    /// acceleration must be less than the value in the free-fall threshold
+    /// register for a free-fall interrupt to be generated.
+    /// The scale factor is 5 ms/LSB.
+    /// Values between 100 ms and 350 ms (0x14 to 0x46) are recommended.
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the free-fall interrupt is enabled._
+    fn set_free_fall_time(&mut self, time: u8) -> Result {
+        let register = 0x29;
+        self.command(register, time)
+    }
+    /// Set fifo control mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Fifo control mode bit flags.
+    /// See [FifoControl] bit flags for more info.
+    ///
+    /// [FifoControl]: struct.FifoControl.html
+    fn set_fifo_control<FC>(&mut self, mode: FC) -> Result
+    where
+        FC: Into<FifoControl>,
+    {
+        let register = 0x38;
+        self.command(register, mode.into().byte[0])
+    }
+    /// Set the inactivity threshold.
     ///
     /// ## Arguments
     /// * `thresh` - Threshold value for detecting activity.
     /// The scale factor is 62.5 mg/LSB.
     /// ___Note:___ _that a value of 0 may result in undesirable behavior if
     /// the inactivity interrupt is enabled._
+    fn set_inactivity_threshold(&mut self, thresh: u8) -> Result {
+        let register = 0x25;
+        self.command(register, thresh)
+    }
+    /// Set the inactivity time.
+    ///
+    /// ## Arguments
     /// * `time` - Time value representing the amount of time that acceleration
-    /// must be less than the value in `thresh` for inactivity to be declared.
+    /// must be less than the value in the inactivity threshold register for
+    /// inactivity to be declared.
     /// The scale factor is 1 sec/LSB.
-    fn set_inactivity(&mut self, thresh: u8, time: u8) -> Result;
+    /// ___Note:___ _that a value of 0 results in an interrupt when the output
+    /// data is less than the threshold._
+    fn set_inactivity_time(&mut self, time: u8) -> Result {
+        let register = 0x26;
+        self.command(register, time)
+    }
+    /// Set interrupt control enable options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Interrupt control mode bit flags.
+    /// See [IntControlMode] bit flags for more info.
+    ///
+    /// [IntControlMode]: struct.IntControlMode.html
+    fn set_interrupt_control<IC>(&mut self, mode: IC) -> Result
+    where
+        IC: Into<IntControlMode>,
+    {
+        let register = 0x2e;
+        self.command(register, mode.into().bits())
+    }
+    /// Set interrupt mapping mode options.
+    ///
+    /// ## Arguments
+    /// * `mode` - Interrupt mapping mode bit flags.
+    /// See [IntMapMode] bit flags for more info.
+    ///
+    /// [IntMapMode]: struct.IntMapMode.html
+    fn set_interrupt_map<IM>(&mut self, mode: IM) -> Result
+    where
+        IM: Into<IntMapMode>,
+    {
+        let register = 0x2f;
+        self.command(register, mode.into().bits())
+    }
     /// Use to set one or more axis offset adjustments.
     ///
     /// ## Arguments
@@ -349,27 +457,22 @@ pub trait Adxl345Writer {
     where
         X: Into<Option<i8>>,
         Y: Into<Option<i8>>,
-        Z: Into<Option<i8>>;
-    /// Set interrupt control enable options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Interrupt control mode bit flags.
-    /// See [IntControlMode] bit flags for more info.
-    ///
-    /// [IntControlMode]: struct.IntControlMode.html
-    fn set_interrupt_control<IC>(&mut self, mode: IC) -> Result
-    where
-        IC: Into<IntControlMode>;
-    /// Set interrupt mapping mode options.
-    ///
-    /// ## Arguments
-    /// * `mode` - Interrupt mapping mode bit flags.
-    /// See [IntMapMode] bit flags for more info.
-    ///
-    /// [IntMapMode]: struct.IntMapMode.html
-    fn set_interrupt_map<IM>(&mut self, mode: IM) -> Result
-    where
-        IM: Into<IntMapMode>;
+        Z: Into<Option<i8>>,
+    {
+        let x = x.into();
+        let y = y.into();
+        let z = z.into();
+        if let Some(x) = x {
+            self.set_x_offset(x)?
+        };
+        if let Some(y) = y {
+            self.set_x_offset(y)?
+        };
+        if let Some(z) = z {
+            self.set_x_offset(z)?
+        };
+        Ok(())
+    }
     /// Set power-saving features control mode options.
     ///
     /// ## Arguments
@@ -377,17 +480,28 @@ pub trait Adxl345Writer {
     /// See [PowerControl] bit flags for more info.
     ///
     /// [PowerControl]: struct.PowerControl.html
-    fn set_power_control<PC>(&self, mode: PC) -> Result
+    fn set_power_control<PC>(&mut self, mode: PC) -> Result
     where
-        PC: Into<PowerControl>;
+        PC: Into<PowerControl>,
+    {
+        let register = 0x2d;
+        self.command(register, mode.into().byte[0])
+    }
     /// Set all non-control tap related values at the same time.
     ///
     /// ## Arguments
-    /// * `mode` - Containing values for `threshold`, `duration`, `latency`, and
+    /// * `tap` - Containing values for `threshold`, `duration`, `latency`, and
     /// `window` registers.
-    fn set_tap<T>(&mut self, mode: T) -> Result
+    fn set_tap<T>(&mut self, tap: T) -> Result
     where
-        T: Into<Tap>;
+        T: Into<Tap>,
+    {
+        let tap = tap.into();
+        self.set_tap_threshold(tap.threshold)?;
+        self.set_tap_duration(tap.duration)?;
+        self.set_tap_latency(tap.latency)?;
+        self.set_tap_window(tap.window)
+    }
     /// Set tap control mode options.
     ///
     /// ## Arguments
@@ -397,7 +511,86 @@ pub trait Adxl345Writer {
     /// [TapMode]: struct.TapMode.html
     fn set_tap_control<TM>(&mut self, mode: TM) -> Result
     where
-        TM: Into<TapMode>;
+        TM: Into<TapMode>,
+    {
+        let register = 0x2a;
+        self.command(register, mode.into().bits())
+    }
+    /// Set required duration required to qualify a tap event vs double tap event.
+    ///
+    /// ## Arguments
+    /// `duration` -  Time value representing the maximum time that an event
+    /// must be above the threshold to qualify as a tap event.
+    /// The scale factor is 625 μs/LSB.
+    /// A value of 0 disables the single/double tap functions.
+    fn set_tap_duration(&mut self, duration: u8) -> Result {
+        let register = 0x21;
+        self.command(register, duration)
+    }
+    /// Set latency for double tap events.
+    ///
+    /// ## Arguments
+    /// `latency` -  Time value representing the wait time from the detection of
+    /// a tap event to the start of the time window during which a possible
+    /// second tap event can be detected.
+    ///
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    fn set_tap_latency(&mut self, latency: u8) -> Result {
+        let register = 0x22;
+        self.command(register, latency)
+    }
+    /// Set threshold for tap events.
+    ///
+    /// ___Note:___ _that a value of 0 may result in undesirable behavior if
+    /// the single tap/double tap interrupt(s) are enabled._
+    ///
+    /// ## Arguments
+    /// `threshold` -  Threshold value for tap interrupts.
+    /// The scale factor is 62.5 mg/LSB.
+    fn set_tap_threshold(&mut self, threshold: u8) -> Result {
+        let register = 0x1d;
+        self.command(register, threshold)
+    }
+    /// Set window for double tap events.
+    ///
+    /// ## Arguments
+    /// `window` -  Time value representing the amount of time after the
+    /// expiration of the latency time during which a second valid tap can begin.
+    ///
+    /// The scale factor is 1.25 ms/LSB.
+    /// A value of 0 disables the double tap function.
+    fn set_tap_window(&mut self, window: u8) -> Result {
+        let register = 0x23;
+        self.command(register, window)
+    }
+    /// Set the x-axis offset adjustment.
+    ///
+    /// ## Arguments
+    /// `x` - Offset adjustment in two's complement format.
+    /// The scale factor is 15.6 mg/LSB.
+    fn set_x_offset(&mut self, x: i8) -> Result {
+        let register = 0x1e;
+        self.command(register, x as u8)
+    }
+    /// Set the y-axis offset adjustment.
+    ///
+    /// ## Arguments
+    /// `y` - Offset adjustment in two's complement format.
+    /// The scale factor is 15.6 mg/LSB.
+    fn set_y_offset(&mut self, y: i8) -> Result {
+        let register = 0x1f;
+        self.command(register, y as u8)
+    }
+    /// Set the z-axis offset adjustment.
+    ///
+    /// ## Arguments
+    /// `z` - Offset adjustment in two's complement format.
+    /// The scale factor is 15.6 mg/LSB.
+    fn set_z_offset(&mut self, z: i8) -> Result {
+        let register = 0x20;
+        self.command(register, z as u8)
+    }
 }
 
 // Activity/Inactivity control mode.
