@@ -24,6 +24,38 @@
 //!
 //! Control set traits are based on the [ADXL345 Datasheet] information.
 //!
+//! This is quick reference table for register address, datasheet name, and
+//! method names which may be helpful during application/driver development.
+//!
+//! | Register    | Datasheet Name  | Reader Method        | Writer Method            |
+//! | ----------: | :-------------: | -------------------- | ------------------------ |
+//! |        0x00 | DEVID           | device_id            | ___READ-ONLY REGISTER___ |
+//! | 0x01 - 0x1c | ___RESERVED___  | ___n/a___            | ___n/a___                |
+//! |        0x1d | THRESH_TAP      | tap_threshold        | set_tap_threshold        |
+//! |        0x1e | OFSX            | x_offset             | set_x_offset             |
+//! |        0x1f | OFSY            | y_offset             | set_y_offset             |
+//! |        0x20 | OFSZ            | z_offset             | set_z_offset             |
+//! |        0x21 | DUR             | tap_duration         | set_tap_duration         |
+//! |        0x22 | Latent          | tap_latent           | set_tap_latent           |
+//! |        0x23 | Window          | tap_window           | set_tap_window           |
+//! |        0x24 | THRESH_ACT      | activity_threshold   | set_activity_threshold   |
+//! |        0x25 | THRESH_INACT    | inactivity_threshold | set_inactivity_threshold |
+//! |        0x26 | TIME_INACT      | tap_inactivity_time  | set_inactivity_time      |
+//! |        0x27 | ACT_INACT_CTL   | activity_control     | set_activity_control     |
+//! |        0x28 | THRESH_FF       | free_fall_threshold  | set_free_fall_threshold  |
+//! |        0x29 | TIME_FF         | free_fall_time       | set_free_fall_time       |
+//! |        0x2a | TAP_AXES        | tap_control          | set_tap_control          |
+//! |        0x2b | ACT_TAP_STATUS  | activity_tap_status  | ___READ-ONLY REGISTER___ |
+//! |        0x2c | BW_RATE         | bandwidth_rate       | set_bandwidth_rate       |
+//! |        0x2d | POWER_CTL       | power_control        | set_power_control        |
+//! |        0x2e | INT_ENABLE      | interrupt_control    | set_interrupt_control    |
+//! |        0x2f | INT_MAP         | interrupt_map        | set_interrupt_map        |
+//! |        0x30 | INT_SOURCE      | interrupt_source     | ___READ-ONLY REGISTER___ |
+//! |        0x31 | DATA_FORMAT     | data_format          | set_data_format          |
+//! | 0x32 - 0x37 | DATAX0 - DATAZ1 | acceleration         | ___READ-ONLY REGISTER___ |
+//! |        0x38 | FIFO_CTL        | fifo_control         | set_fifo_control         |
+//! |        0x39 | FIFO_STATUS     | fifo_status          | ___READ-ONLY REGISTER___ |
+//!
 //! [ADXL345 Datasheet]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
 
 use crate::{AdxlError, AdxlResult, Result};
