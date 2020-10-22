@@ -30,7 +30,7 @@ extern crate c2rust_bitfields;
 
 mod cmd;
 mod error;
-mod i2c;
+pub mod i2c;
 
 pub use crate::{
     cmd::{

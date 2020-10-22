@@ -21,24 +21,42 @@
 // SOFTWARE.
 //! A common set of error and result type used in the library.
 
+use rppal::i2c::Error;
 use thiserror::Error;
 
 /// Provides a shared set of error types.
 #[derive(Error, Debug)]
 pub enum AdxlError {
+    #[error("Requested feature is not supported for this interface")]
+    FeatureNotSupported,
     /// Used when given address (offset) is read-only, reserved, or unknown.
     #[error("Attempted illegal write to address {0}")]
     IllegalWriteAddress(u8),
+    #[error("Received invalid slave address: {0}")]
+    InvalidSlaveAddress(u16),
     /// Used if under-laying IO Error happens.
-    #[error("IO write failed")]
-    Write(#[from] std::io::Error),
+    #[error("IO failed")]
+    Io(#[from] std::io::Error),
     #[error("Received one or more set unknown mode bit(s) in value: {0}")]
     UnknownModeBit(u8),
+    #[error("An unknown Raspberry Pi model was found")]
+    UnknownModel,
 }
 
 impl From<AdxlError> for std::io::Error {
     fn from(ad: AdxlError) -> Self {
         ad.into()
+    }
+}
+
+impl From<rppal::i2c::Error> for AdxlError {
+    fn from(e: Error) -> Self {
+        match e {
+            Error::Io(v) => Self::IO(v),
+            Error::InvalidSlaveAddress(v) => Self::InvalidSlaveAddress(v),
+            Error::FeatureNotSupported => Self::FeatureNotSupported,
+            Error::UnknownModel => Self::UnknownModel,
+        }
     }
 }
 

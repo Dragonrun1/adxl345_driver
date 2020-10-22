@@ -281,6 +281,7 @@ pub trait Adxl345Writer {
     /// Typically this will be only be called from a `new()` method of the
     /// implementation but there can be rare times when the library user needs
     /// access after instance has been created.
+    /// Think of it as a soft/warm reset.
     fn init(&mut self) -> Result;
     //
     // ## Shouldn't be a need to change these methods in driver implementations. ##

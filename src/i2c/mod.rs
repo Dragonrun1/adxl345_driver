@@ -19,5 +19,78 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
+//! Contains the I²C driver for the device.
 
-pub struct Device {}
+use rppal::i2c::I2c;
+
+use crate::{Adxl345, Adxl345Reader, Adxl345Writer, AdxlResult, Result};
+
+/// I²C driver structure for the device.
+#[derive(Debug)]
+pub struct Device {
+    /// Holds the bus interface from the [RPPAL I²C] peripheral.
+    ///
+    /// [RPPAL I²C]: https://docs.golemparts.com/rppal/0.11.3/rppal/i2c/index.html
+    bus: I2c,
+}
+
+impl Device {
+    /// Constructor
+    pub fn new() -> AdxlResult<Self> {
+        Self::with_address(0x53)
+    }
+    /// Constructor with slave address.
+    ///
+    /// The device only has two addresses 0x53 or 0x1d depending on the low or
+    /// high logic level on the `ALT ADDRESS` pin.
+    ///
+    /// ## Arguments
+    /// * `slave` - Address of ADXL345 device.
+    pub fn with_address(slave: u16) -> AdxlResult<Self> {
+        let mut device = Device { bus: I2c::new()? };
+        device.bus.set_slave_address(slave)?;
+        Ok(device)
+    }
+}
+
+impl Adxl345 for Device {}
+
+impl Adxl345Reader for Device {
+    fn access(&self, register: u8) -> AdxlResult<u8> {
+        let buf = &mut [0u8; 1];
+        self.bus.block_read(register, buf)?;
+        Ok(buf[0])
+    }
+    fn acceleration(&self) -> AdxlResult<(i16, i16, i16)> {
+        let register = 0x32;
+        let buf = &mut [0u8; 6];
+        self.bus.block_read(register, buf)?;
+        Ok((
+            i16::from_le_bytes([buf[0], buf[1]]),
+            i16::from_le_bytes([buf[2], buf[3]]),
+            i16::from_le_bytes([buf[4], buf[5]]),
+        ))
+    }
+}
+
+impl Adxl345Writer for Device {
+    fn command(&mut self, register: u8, byte: u8) -> Result {
+        self.bus.block_write(register, &[byte])?;
+        Ok(())
+    }
+    fn init(&mut self) -> Result {
+        for register in 0x1du8..=0x2a {
+            self.command(register, 0)?;
+        }
+        let register = 0x2c;
+        self.command(register, 0x0a)?;
+        for register in 0x2du8..=0x2f {
+            self.command(register, 0)?;
+        }
+        let register = 0x31;
+        self.command(register, 0)?;
+        let register = 0x38;
+        self.command(register, 0)?;
+        Ok(())
+    }
+}
