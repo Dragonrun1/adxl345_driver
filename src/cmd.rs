@@ -357,10 +357,10 @@ pub trait Adxl345Writer {
     /// [BandwidthRateControl]: struct.BandwidthRateControl.html
     fn set_bandwidth_rate<BRC>(&mut self, mode: BRC) -> Result
     where
-        BRC: Into<BandwidthRateControl>,
+        BRC: TryInto<BandwidthRateControl, Error = AdxlError>,
     {
         let register = 0x2c;
-        self.command(register, mode.into().byte[0])
+        self.command(register, mode.try_into()?.byte[0])
     }
     /// Set data format mode options.
     ///
@@ -371,10 +371,10 @@ pub trait Adxl345Writer {
     /// [DataFormat]: struct.DataFormat.html
     fn set_data_format<DF>(&mut self, mode: DF) -> Result
     where
-        DF: Into<DataFormat>,
+        DF: TryInto<DataFormat, Error = AdxlError>,
     {
         let register = 0x31;
-        self.command(register, mode.into().byte[0])
+        self.command(register, mode.try_into()?.byte[0])
     }
     /// Set the free-fall threshold.
     ///
@@ -515,10 +515,10 @@ pub trait Adxl345Writer {
     /// [PowerControl]: struct.PowerControl.html
     fn set_power_control<PC>(&mut self, mode: PC) -> Result
     where
-        PC: Into<PowerControl>,
+        PC: TryInto<PowerControl, Error = AdxlError>,
     {
         let register = 0x2d;
-        self.command(register, mode.into().byte[0])
+        self.command(register, mode.try_into()?.byte[0])
     }
     /// Set all non-control tap related values at the same time.
     ///
