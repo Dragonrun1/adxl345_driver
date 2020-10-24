@@ -6,6 +6,10 @@ It exposes a simple trait-based API for the command set which minimizes the
 coupling between the hardware driver (I²C, etc) and the code that passes
 commands and data to and from the accelerometer.
 
+Through the name says ADXL345 the driver should also work with the [ADXL346]
+device as well since the only difference between them is the physical packaging
+and not the internal workings.
+
 ## Table Of Contents
 
   * [Getting Started](#getting-started)
@@ -52,24 +56,34 @@ example was used for testing during initial development on a RPi 4.
 To build the I²C example start by clone this project somewhere on your Raspberry
 Pi:
 
-```shell script
+```shell
 git clone https://github.com/Dragonrun1/adxl345_driver
 ```
 
 Next execute the follow to build the example:
 
-```shell script
+```shell
 cargo build --example i2c
 ```
 
 And finally execute:
 
-```shell script
+```shell
 sudo ./target/debug/examples/i2c
 ```
 
 You should see the series of x, y, z values displayed in the terminal if your
 device has been hooked up using the primary I²C that the example expects.
+
+Output example:
+```console
+axis: {'x': 1.6083, 'y': 0.0392, 'z': 8.7868} m/s²
+axis: {'x': 1.6867, 'y': 0.1177, 'z': 8.7868} m/s²
+axis: {'x': 1.6475, 'y': 0.1177, 'z': 8.8260} m/s²
+...
+```
+
+You can find the latest version by go to [adxl345_driver] on the crates.io website.
 
 ## Contributing
 
@@ -95,16 +109,17 @@ All documentation like this README is licensed under a
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
 (CC-BY-SA). 
 
-[Cargo.toml]: https://doc.rust-lang.org/cargo/guide/dependencies.html
-[CC-BY-SA]: http://creativecommons.org/licenses/by-sa/4.0/
-[Contributor Covenant Code of Conduct]: CODE_OF_CONDUCT.md
-[cargo-edit]: https://crates.io/crates/cargo-edit
-[crates.io]: https://crates.io/search?q=hd44780
 [ADXL345]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
+[ADXL346]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL346.pdf
+[CC-BY-SA]: http://creativecommons.org/licenses/by-sa/4.0/
+[Cargo.toml]: https://doc.rust-lang.org/cargo/guide/dependencies.html
+[Contributor Covenant Code of Conduct]: CODE_OF_CONDUCT.md
 [LICENSE]: LICENSE
 [MIT]: https://opensource.org/licenses/MIT
-[rppal]: https://github.com/golemparts/rppal
 [Rust]: https://www.rust-lang.org/
+[adxl345_driver]: https://crates.io/crates/adxl345_driver
+[cargo-edit]: https://crates.io/crates/cargo-edit
+[rppal]: https://github.com/golemparts/rppal
 
 <hr>
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
