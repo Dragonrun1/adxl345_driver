@@ -49,6 +49,7 @@ impl Device {
     pub fn with_address(slave: u16) -> AdxlResult<Self> {
         let mut device = Device { bus: I2c::new()? };
         device.bus.set_slave_address(slave)?;
+        device.init()?;
         Ok(device)
     }
 }
