@@ -2,7 +2,7 @@
 name = "adxl345_driver"
 version = "0.0.5"
 authors = ["Michael Cummings <dragonrun1@gmail.com>"]
-description = "Driver for Analog Device ADXL345 3-Axis Digital Accelerometer"
+description = "Driver for Analog Device ADXL345/ADXL346 3-Axis Digital Accelerometer"
 edition = "2018"
 keywords = ["adxl345", "embedded", "pi", "raspberry", "driver"]
 categories = ["embedded", "hardware-support", "os"]
@@ -14,5 +14,9 @@ repository = "https://github.com/Dragonrun1/adxl345_driver"
 [dependencies]
 bitflags = "1.2.1"
 c2rust-bitfields = "0.3.0"
-rppal = { path = "../rppal", features = ["hal", "hal-unproven"] }
+rppal = { version = "0.11.3", features = ["hal", "hal-unproven"] }
 thiserror = "1.0.20"
+
+[dev-dependencies]
+anyhow = "1.0.33"
+ctrlc = { version = "3.1.7", features = ["termination"] }
