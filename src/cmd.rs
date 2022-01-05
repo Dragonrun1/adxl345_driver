@@ -626,6 +626,24 @@ pub trait Adxl345Writer {
     }
 }
 
+pub(crate) trait Adxl345Init: Adxl345Writer {
+    fn init_registers(&mut self, spi_3wire: bool) -> Result {
+        let register = 0x31;
+        self.command(register, if spi_3wire { 1 << 6 } else { 0 })?;
+        for register in 0x1du8..=0x2a {
+            self.command(register, 0)?;
+        }
+        let register = 0x2c;
+        self.command(register, 0x0a)?;
+        for register in 0x2du8..=0x2f {
+            self.command(register, 0)?;
+        }
+        let register = 0x38;
+        self.command(register, 0)?;
+        Ok(())
+    }
+}
+
 // Activity/Inactivity control mode.
 bitflags! {
     /// Activity mode bit flags used in [activity_control()] and

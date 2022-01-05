@@ -23,7 +23,7 @@
 
 use rppal::i2c::I2c;
 
-use crate::{Adxl345, Adxl345Reader, Adxl345Writer, AdxlResult, Result};
+use crate::{Adxl345, Adxl345Reader, Adxl345Writer, Adxl345Init, AdxlResult, Result};
 
 /// I²C driver structure for the device.
 #[derive(Debug)]
@@ -55,6 +55,7 @@ impl Device {
 }
 
 impl Adxl345 for Device {}
+impl Adxl345Init for Device {}
 
 impl Adxl345Reader for Device {
     fn access(&self, register: u8) -> AdxlResult<u8> {
@@ -80,18 +81,6 @@ impl Adxl345Writer for Device {
         Ok(())
     }
     fn init(&mut self) -> Result {
-        for register in 0x1du8..=0x2a {
-            self.command(register, 0)?;
-        }
-        let register = 0x2c;
-        self.command(register, 0x0a)?;
-        for register in 0x2du8..=0x2f {
-            self.command(register, 0)?;
-        }
-        let register = 0x31;
-        self.command(register, 0)?;
-        let register = 0x38;
-        self.command(register, 0)?;
-        Ok(())
+        self.init_registers(false)
     }
 }
