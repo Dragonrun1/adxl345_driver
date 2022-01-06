@@ -45,7 +45,10 @@
 
 use adxl345_driver::{spi::Device, Adxl345Reader, Adxl345Writer};
 use anyhow::{Context, Result};
-use rppal::system::DeviceInfo;
+use rppal::{
+    spi::{Bus, Mode, SlaveSelect, Spi},
+    system::DeviceInfo,
+};
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     sync::Arc,
@@ -66,7 +69,8 @@ fn main() -> Result<()> {
             .context("Failed to get new DeviceInfo")?
             .model()
     );
-    let mut adxl345 = Device::new().context("Failed to get instance")?;
+    let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, 1_000_000, Mode::Mode3).context("Failed to create SPI bus")?;
+    let mut adxl345 = Device::new(spi, false).context("Failed to get instance")?;
     let id = adxl345.device_id().context("Failed to get device id")?;
     println!("Device id = {}", id);
     // Set full scale output and range to 2G.

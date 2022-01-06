@@ -33,6 +33,7 @@ mod error;
 pub mod i2c;
 pub mod spi;
 
+pub(crate) use crate::cmd::Adxl345AccExtract;
 pub(crate) use crate::cmd::Adxl345Init;
 pub use crate::{
     cmd::{

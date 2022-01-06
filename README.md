@@ -1,7 +1,9 @@
 # adxl345_driver
 
 This is an implementation of a hardware driver for a [ADXL345] type 3-Axis
-Digital Accelerometer write in [Rust] using the [rppal] library.
+Digital Accelerometer written in [Rust] using [embedded-hal] `I2c` and `Spi` traits.
+That means it runs on all hardware layers that implement the [embedded-hal] traits.
+
 It exposes a simple trait-based API for the command set which minimizes the
 coupling between the hardware driver (I²C, etc) and the code that passes
 commands and data to and from the accelerometer.
@@ -21,15 +23,12 @@ and not the internal workings.
 ## Getting Started
 
 You will need to have a recent version of [Rust] installed.
-Any version of Rust that supports version 0.11.3 or later of [rppal] should
-work but versions from 1.43 to 1.47 of Rust have been used during initial
-development on both the nightly and release channels.
-Earlier versions might work as well but have not been tested.
 
-Development can be done on any OS that Rust supports but the only expected
-output target is a Raspberry Pi running a Linux OS.
-All initial development has been done with a combination of a laptop running
-Windows 10 and a 4GB Raspberry Pi 4 running the Raspberry Pi OS (Raspbian).
+This crate supports all hardware abstraction layers that implement the
+[embedded-hal] `I2c` and `Spi` traits. That includes the [rppal] driver for
+the Raspberry Pi. But it is not restricted to that platform. Platforms
+that are known to work correctly are the Raspberry Pi with [rppal] and the
+ESP32 with [esp-idf-hal]. But this crate is not restricted to these HAL layers.
 
 ### Using The Crate
 
@@ -117,7 +116,9 @@ All documentation like this README is licensed under a
 [Rust]: https://www.rust-lang.org/
 [adxl345_driver]: https://crates.io/crates/adxl345_driver
 [cargo-edit]: https://crates.io/crates/cargo-edit
+[embedded-hal]: https://crates.io/crates/embedded-hal
 [rppal]: https://github.com/golemparts/rppal
+[esp-idf-hal]: https://crates.io/crates/esp-idf-hal
 
 <hr>
 <a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">

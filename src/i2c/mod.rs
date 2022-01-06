@@ -21,63 +21,68 @@
 // SOFTWARE.
 //! Contains the I²C driver for the device.
 
-use rppal::i2c::I2c;
-
-use crate::{Adxl345, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlResult, Result};
+use crate::{Adxl345, Adxl345AccExtract, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlError, AdxlResult, Result};
+use embedded_hal::i2c::{blocking::I2c, SevenBitAddress};
 
 /// I²C driver structure for the device.
 #[derive(Debug)]
-pub struct Device {
-    /// Holds the bus interface from the [RPPAL I²C] peripheral.
-    ///
-    /// [RPPAL I²C]: https://docs.golemparts.com/rppal/0.11.3/rppal/i2c/index.html
-    bus: I2c,
+pub struct Device<B> {
+    /// Any bus object implementing the `embedded_hal::i2c::blocking::I2c` trait.
+    bus: B,
+    /// The 7 bit address of the device.
+    address: SevenBitAddress,
 }
 
-impl Device {
-    /// Constructor
-    pub fn new() -> AdxlResult<Self> {
-        Self::with_address(0x53)
-    }
-    /// Constructor with slave address.
+impl<B: I2c> Device<B> {
+    /// Constructor with default slave address `0x53`.
     ///
-    /// The device only has two addresses 0x53 or 0x1d depending on the low or
+    /// ## Arguments
+    /// * `bus` - Any object implementing the `embedded_hal::i2c::blocking::I2c` trait.
+    pub fn new(bus: B) -> AdxlResult<Self> {
+        Self::with_address(bus, 0x53)
+    }
+    /// Constructor with explicit slave address.
+    ///
+    /// The device only has two addresses `0x53` or `0x1d` depending on the low or
     /// high logic level on the `ALT ADDRESS` pin.
     ///
     /// ## Arguments
-    /// * `slave` - Address of ADXL345 device.
-    pub fn with_address(slave: u16) -> AdxlResult<Self> {
-        let mut device = Device { bus: I2c::new()? };
-        device.bus.set_slave_address(slave)?;
+    /// * `bus` - Any object implementing the `embedded_hal::i2c::blocking::I2c` trait.
+    /// * `address` - Address of ADXL345 device.
+    pub fn with_address(bus: B, address: u8) -> AdxlResult<Self> {
+        let mut device = Device { bus, address };
         device.init()?;
         Ok(device)
     }
 }
 
-impl Adxl345 for Device {}
-impl Adxl345Init for Device {}
+impl<B: I2c> Adxl345 for Device<B> {}
+impl<B: I2c> Adxl345Init for Device<B> {}
+impl<B: I2c> Adxl345AccExtract for Device<B> {}
 
-impl Adxl345Reader for Device {
-    fn access(&self, register: u8) -> AdxlResult<u8> {
-        let buf = &mut [0u8; 1];
-        self.bus.block_read(register, buf)?;
+impl<B: I2c> Adxl345Reader for Device<B> {
+    fn access(&mut self, register: u8) -> AdxlResult<u8> {
+        let mut buf = [0u8; 1];
+        if let Err(e) = self.bus.write_read(self.address, &[register], &mut buf) {
+            return Err(AdxlError::I2c(format!("{:?}", e)));
+        }
         Ok(buf[0])
     }
-    fn acceleration(&self) -> AdxlResult<(i16, i16, i16)> {
+    fn acceleration(&mut self) -> AdxlResult<(i16, i16, i16)> {
         let register = 0x32;
-        let buf = &mut [0u8; 6];
-        self.bus.block_read(register, buf)?;
-        Ok((
-            i16::from_le_bytes([buf[0], buf[1]]),
-            i16::from_le_bytes([buf[2], buf[3]]),
-            i16::from_le_bytes([buf[4], buf[5]]),
-        ))
+        let mut buf = [0u8; 6];
+        if let Err(e) = self.bus.write_read(self.address, &[register], &mut buf) {
+            return Err(AdxlError::I2c(format!("{:?}", e)));
+        }
+        Ok(self.extract_acceleration(&buf))
     }
 }
 
-impl Adxl345Writer for Device {
+impl<B: I2c> Adxl345Writer for Device<B> {
     fn command(&mut self, register: u8, byte: u8) -> Result {
-        self.bus.block_write(register, &[byte])?;
+        if let Err(e) = self.bus.write(self.address, &[register, byte]) {
+            return Err(AdxlError::I2c(format!("{:?}", e)));
+        }
         Ok(())
     }
     fn init(&mut self) -> Result {
