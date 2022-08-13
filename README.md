@@ -12,11 +12,11 @@ and not the internal workings.
 
 ## Table Of Contents
 
-  * [Getting Started](#getting-started)
-  * [Using The Crate](#using-the-crate)
-  * [Examples](#examples)
-  * [Contributing](#contributing)
-  * [Licenses](#licenses)
+* [Getting Started](#getting-started)
+* [Using The Crate](#using-the-crate)
+* [Examples](#examples)
+* [Contributing](#contributing)
+* [Licenses](#licenses)
 
 ## Getting Started
 
@@ -76,6 +76,7 @@ You should see the series of x, y, z values displayed in the terminal if your
 device has been hooked up using the primary I²C that the example expects.
 
 Output example:
+
 ```console
 axis: {'x': 1.6083, 'y': 0.0392, 'z': 8.7868} m/s²
 axis: {'x': 1.6867, 'y': 0.1177, 'z': 8.7868} m/s²
@@ -103,8 +104,8 @@ All code is available under the [MIT] license.
 You can find a copy of the license in the [LICENSE] file.
 
 All documentation like this README is licensed under a
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
-(CC-BY-SA). 
+<a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>
+(CC-BY-SA).
 
 [ADXL345]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
 [ADXL346]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL346.pdf
@@ -119,6 +120,6 @@ All documentation like this README is licensed under a
 [rppal]: https://github.com/golemparts/rppal
 
 <hr>
-<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+<a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">
 <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" />
 </a>

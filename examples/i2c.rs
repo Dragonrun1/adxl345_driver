@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     // Set measurement mode off.
     adxl345
         .set_power_control(0)
-        .context("Failed to turn on measurement mode")?;
+        .context("Failed to turn off measurement mode")?;
     println!("\nI²C example stopped");
     Ok(())
 }
