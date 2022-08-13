@@ -21,30 +21,55 @@
 // SOFTWARE.
 //! A common set of error and result type used in the library.
 
-use thiserror::Error;
-
 /// Provides a shared set of error types.
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum AdxlError {
     /// Used when given address (offset) is read-only, reserved, or unknown.
-    #[error("Attempted illegal write to address {0}")]
     IllegalWriteAddress(u8),
-    /// Used to pass through any underlying I²C errors.
-    #[error("I²C interface access failed")]
-    I2c(#[from] rppal::i2c::Error),
-    /// Used to pass through any underlying SPI errors.
-    #[error("SPI interface access failed")]
-    Spi(#[from] rppal::spi::Error),
+    /// Underlying I²C error.
+    I2c(),
+    /// Underlying SPI error.
+    Spi(),
     /// Invalid bus parameters.
-    #[error("Invalid bus parameters")]
     InvalidBusParams,
     /// Used when given an un-excepted value for a mode.
-    #[error("Received one or more set unknown mode bit(s) in value: {0}")]
     UnknownModeBit(u8),
 }
 
+impl core::fmt::Display for AdxlError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            AdxlError::IllegalWriteAddress(addr) =>
+                write!(f, "Attempted illegal write to address {}", addr),
+            AdxlError::I2c() =>
+                write!(f, "I²C interface access failed"),
+            AdxlError::Spi() =>
+                write!(f, "SPI interface access failed"),
+            AdxlError::InvalidBusParams =>
+                write!(f, "Invalid bus parameters"),
+            AdxlError::UnknownModeBit(value) =>
+                write!(f, "Received one or more set unknown mode bit(s) in value: {}", value),
+        }
+    }
+}
+
+#[cfg(not(feature="no_std"))]
+impl std::error::Error for AdxlError {}
+
+impl From<rppal::i2c::Error> for AdxlError {
+    fn from(_: rppal::i2c::Error) -> AdxlError {
+        AdxlError::I2c()
+    }
+}
+
+impl From<rppal::spi::Error> for AdxlError {
+    fn from(_: rppal::spi::Error) -> AdxlError {
+        AdxlError::Spi()
+    }
+}
+
 /// Result type used when return value is needed from methods in library.
-pub type AdxlResult<T> = std::result::Result<T, AdxlError>;
+pub type AdxlResult<T> = core::result::Result<T, AdxlError>;
 
 /// Result type used when return value is _NOT_ needed from methods in library.
-pub type Result = std::result::Result<(), AdxlError>;
+pub type Result = core::result::Result<(), AdxlError>;
