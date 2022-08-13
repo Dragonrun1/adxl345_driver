@@ -31,6 +31,7 @@ extern crate c2rust_bitfields;
 mod cmd;
 mod error;
 pub mod i2c;
+pub mod spi;
 
 pub use crate::{
     cmd::{
@@ -40,3 +41,4 @@ pub use crate::{
     },
     error::{AdxlError, AdxlResult, Result},
 };
+pub(crate) use crate::cmd::Adxl345Init;

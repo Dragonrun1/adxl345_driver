@@ -88,9 +88,6 @@ You can find the latest version by go to [adxl345_driver] on the crates.io websi
 ## Contributing
 
 Contributors are welcome.
-I would like to see the hardware drives extended beyond just the I²C interface
-but I currently don't have access to other hardware for development or testing
-using the SPI interface.
 Make sure you have read the [Contributor Covenant Code of Conduct].
 All contributed code will be considered to also be contributed under a [MIT]
 license.
