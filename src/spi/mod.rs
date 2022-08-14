@@ -23,7 +23,7 @@
 //! Contains the SPI driver for the device.
 
 use crate::{Adxl345, Adxl345AccExtract, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlError, AdxlResult, Result};
-use embedded_hal::spi::blocking::{Transfer, Write};
+use embedded_hal::spi::blocking::{SpiBus, SpiDevice};
 
 /// SPI driver structure for the device.
 #[derive(Debug)]
@@ -34,7 +34,9 @@ pub struct Device<B> {
     three_wire: bool,
 }
 
-impl<B: Transfer + Write> Device<B> {
+impl<B> Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{
     /// Constructor.
     ///
     /// ## Arguments
@@ -47,11 +49,21 @@ impl<B: Transfer + Write> Device<B> {
     }
 }
 
-impl<B: Transfer + Write> Adxl345 for Device<B> {}
-impl<B: Transfer + Write> Adxl345Init for Device<B> {}
-impl<B: Transfer + Write> Adxl345AccExtract for Device<B> {}
+impl<B> Adxl345 for Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{}
 
-impl<B: Transfer + Write> Adxl345Reader for Device<B> {
+impl<B> Adxl345Init for Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{}
+
+impl<B> Adxl345AccExtract for Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{}
+
+impl<B> Adxl345Reader for Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{
     fn access(&mut self, register: u8) -> AdxlResult<u8> {
         let mut read_buf = [0u8, 0u8];
         debug_assert!(register <= 0x7F);
@@ -81,7 +93,9 @@ impl<B: Transfer + Write> Adxl345Reader for Device<B> {
     }
 }
 
-impl<B: Transfer + Write> Adxl345Writer for Device<B> {
+impl<B> Adxl345Writer for Device<B>
+    where B: SpiDevice, B::Bus: SpiBus
+{
     fn command(&mut self, register: u8, byte: u8) -> Result {
         debug_assert!(register <= 0x7F);
         let write_buf = [(register & 0x7Fu8), byte];
