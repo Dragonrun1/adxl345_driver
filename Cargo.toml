@@ -12,11 +12,11 @@ readme = "README.md"
 repository = "https://github.com/Dragonrun1/adxl345_driver"
 
 [dependencies]
-bitflags = "1.2.1"
+bitflags = "1.3.2"
 c2rust-bitfields = "0.3.0"
 rppal = { version = "0.11.3", features = ["hal", "hal-unproven"] }
-thiserror = "1.0.20"
+thiserror = "1.0.32"
 
 [dev-dependencies]
-anyhow = "1.0.33"
-ctrlc = { version = "3.1.7", features = ["termination"] }
+anyhow = "1.0.61"
+ctrlc = { version = "3.2.2", features = ["termination"] }
