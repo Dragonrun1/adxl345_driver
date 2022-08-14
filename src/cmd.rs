@@ -59,7 +59,7 @@
 //! [ADXL345 Datasheet]: https://www.analog.com/media/en/technical-documentation/data-sheets/ADXL345.pdf
 
 use crate::{AdxlError, AdxlResult, Result};
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 
 /// Complete R/W register command set for the accelerometer.
 pub trait Adxl345: Adxl345Reader + Adxl345Writer {}
@@ -756,7 +756,7 @@ pub struct BandwidthRateControl {
 
 impl TryFrom<u8> for BandwidthRateControl {
     type Error = AdxlError;
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
         // Bit-wise AND with negative mask of allowed bitfields.
         if value & !0x1f == 0 {
             Ok(Self { byte: [value; 1] })
@@ -817,7 +817,7 @@ pub struct DataFormat {
 impl TryFrom<u8> for DataFormat {
     type Error = AdxlError;
     //noinspection DuplicatedCode
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
         // Bit-wise AND with negative mask of allowed bitfields.
         if value & !0xef == 0 {
             Ok(Self { byte: [value; 1] })
@@ -893,7 +893,7 @@ pub struct FifoStatus {
 impl TryFrom<u8> for FifoStatus {
     type Error = AdxlError;
     //noinspection DuplicatedCode
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
         // Bit-wise AND with negative mask of allowed bitfields.
         if value & !0xbf == 0 {
             Ok(Self { byte: [value; 1] })
@@ -1091,7 +1091,7 @@ pub struct PowerControl {
 impl TryFrom<u8> for PowerControl {
     type Error = AdxlError;
     //noinspection DuplicatedCode
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
         // Bit-wise AND with negative mask of allowed bitfields.
         if value & !0x3f == 0 {
             Ok(Self { byte: [value; 1] })
