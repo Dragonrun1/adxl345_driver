@@ -22,9 +22,9 @@
 // SOFTWARE.
 //! Contains the SPI driver for the device.
 
-use rppal::spi::{Spi, Bus, SlaveSelect, Mode};
+use rppal::spi::{Bus, Mode, SlaveSelect, Spi};
 
-use crate::{Adxl345, Adxl345Reader, Adxl345Writer, Adxl345Init, AdxlError, AdxlResult, Result};
+use crate::{Adxl345, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlError, AdxlResult, Result};
 
 /// SPI driver structure for the device.
 #[derive(Debug)]
@@ -51,10 +51,12 @@ impl Device {
     /// * `slave_select` - SPI slave-select index (0-2).
     /// * `clock_speed` - SPI clock speed in Hz.
     /// * `three_wire` - true: SPI 3-wire mode; false: SPI 4-wire mode.
-    pub fn with_bus(bus: u8,
-                    slave_select: u8,
-                    clock_speed: u32,
-                    three_wire: bool) -> AdxlResult<Self> {
+    pub fn with_bus(
+        bus: u8,
+        slave_select: u8,
+        clock_speed: u32,
+        three_wire: bool,
+    ) -> AdxlResult<Self> {
         let bus = match bus {
             0 => Bus::Spi0,
             1 => Bus::Spi1,
@@ -112,8 +114,15 @@ impl Adxl345Reader for Device {
         let register = 0x32;
         let mut read_buf = [0u8; 7];
         debug_assert!(register <= 0x7F);
-        let write_buf = [(register & 0x7Fu8) | 0x80u8 | 0x40u8,
-                         0u8, 0u8, 0u8, 0u8, 0u8, 0u8];
+        let write_buf = [
+            (register & 0x7Fu8) | 0x80u8 | 0x40u8,
+            0u8,
+            0u8,
+            0u8,
+            0u8,
+            0u8,
+            0u8,
+        ];
         self.bus.transfer(&mut read_buf, &write_buf)?;
         Ok((
             i16::from_le_bytes([read_buf[1], read_buf[2]]),
@@ -131,6 +140,6 @@ impl Adxl345Writer for Device {
         Ok(())
     }
     fn init(&mut self) -> Result {
-    	self.init_registers(self.three_wire)
+        self.init_registers(self.three_wire)
     }
 }

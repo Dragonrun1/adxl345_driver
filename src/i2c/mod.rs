@@ -23,7 +23,7 @@
 
 use rppal::i2c::I2c;
 
-use crate::{Adxl345, Adxl345Reader, Adxl345Writer, Adxl345Init, AdxlResult, Result};
+use crate::{Adxl345, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlResult, Result};
 
 /// I²C driver structure for the device.
 #[derive(Debug)]

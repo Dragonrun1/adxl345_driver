@@ -33,6 +33,7 @@ mod error;
 pub mod i2c;
 pub mod spi;
 
+pub(crate) use crate::cmd::Adxl345Init;
 pub use crate::{
     cmd::{
         ATStatus, ActivityMode, Adxl345, Adxl345Reader, Adxl345Writer, BandwidthRateControl,
@@ -41,4 +42,3 @@ pub use crate::{
     },
     error::{AdxlError, AdxlResult, Result},
 };
-pub(crate) use crate::cmd::Adxl345Init;
