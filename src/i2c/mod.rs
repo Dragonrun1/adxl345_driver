@@ -22,7 +22,7 @@
 //! Contains the I²C driver for the device.
 
 use crate::{Adxl345, Adxl345AccExtract, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlError, AdxlResult, Result};
-use embedded_hal::i2c::{blocking::I2c, SevenBitAddress};
+use embedded_hal::i2c::{I2c, SevenBitAddress};
 
 /// I²C driver structure for the device.
 #[derive(Debug)]

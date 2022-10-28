@@ -23,7 +23,7 @@
 //! Contains the SPI driver for the device.
 
 use crate::{Adxl345, Adxl345AccExtract, Adxl345Init, Adxl345Reader, Adxl345Writer, AdxlError, AdxlResult, Result};
-use embedded_hal::spi::blocking::{SpiBus, SpiDevice};
+use embedded_hal::spi::{SpiBus, SpiDevice};
 
 /// SPI driver structure for the device.
 #[derive(Debug)]
