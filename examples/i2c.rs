@@ -44,7 +44,7 @@
 
 use adxl345_driver::{i2c::Device, Adxl345Reader, Adxl345Writer};
 use anyhow::{Context, Result};
-use rppal::system::DeviceInfo;
+use rppal::{i2c::I2c, system::DeviceInfo};
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     sync::Arc,
@@ -65,7 +65,7 @@ fn main() -> Result<()> {
             .context("Failed to get new DeviceInfo")?
             .model()
     );
-    let mut adxl345 = Device::new().context("Failed to get instance")?;
+    let mut adxl345 = Device::new(I2c::new().context("Failed to create I2C bus.")?).context("Failed to get instance")?;
     let id = adxl345.device_id().context("Failed to get device id")?;
     println!("Device id = {}", id);
     // Set full scale output and range to 2G.

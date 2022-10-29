@@ -31,13 +31,10 @@ pub enum AdxlError {
     IllegalWriteAddress(u8),
     /// Used to pass through any underlying I²C errors.
     #[error("I²C interface access failed")]
-    I2c(#[from] rppal::i2c::Error),
+    I2c(String),
     /// Used to pass through any underlying SPI errors.
     #[error("SPI interface access failed")]
-    Spi(#[from] rppal::spi::Error),
-    /// Invalid bus parameters.
-    #[error("Invalid bus parameters")]
-    InvalidBusParams,
+    Spi(String),
     /// Used when given an un-excepted value for a mode.
     #[error("Received one or more set unknown mode bit(s) in value: {0}")]
     UnknownModeBit(u8),
